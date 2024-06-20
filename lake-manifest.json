@@ -1,0 +1,14 @@
+{"version": 7,
+ "packagesDir": ".lake/packages",
+ "packages":
+ [{"url": "https://github.com/leanprover/lean4-cli.git",
+   "type": "git",
+   "subDir": null,
+   "rev": "a11566029bd9ec4f68a65394e8c3ff1af74c1a29",
+   "name": "Cli",
+   "manifestFile": "lake-manifest.json",
+   "inputRev": "main",
+   "inherited": false,
+   "configFile": "lakefile.lean"}],
+ "name": "jixia",
+ "lakeDir": ".lake"}
