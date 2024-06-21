@@ -22,7 +22,7 @@ instance {α : Type _} [BEq α] [Hashable α] [ToJson α] : ToJson (HashSet α) 
 instance {α β : Type _} [BEq α] [Hashable α] [ToString α] [ToJson β] : ToJson (HashMap α β) where
   toJson x := .mkObj <| x.toList.map fun (a, b) => (toString a, toJson b)
 instance : ToJson String.Range where
-  toJson x := toJson #[x.start, x.stop]
+  toJson x := json% [$(x.start), $(x.stop)]
 deriving instance ToJson for Visibility, RecKind, AttributeKind, BinderInfo
 
 def _root_.Lean.Syntax.isOriginal (stx : Syntax) : Bool :=
@@ -52,11 +52,11 @@ deriving instance ToJson for LineInfo
 
 section
 local instance : ToJson Syntax where
-  toJson x := Json.mkObj [
-    ("kind", toJson x.getKind),
-    ("range", toJson x.getRange?),
-    ("original", x.isOriginal),
-  ]
+  toJson x := json% {
+    kind: $(x.getKind),
+    range: $(x.getRange?),
+    original: $(x.isOriginal)
+  }
 deriving instance ToJson for TacticRunInfo
 end
 
