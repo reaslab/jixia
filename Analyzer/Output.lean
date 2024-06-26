@@ -46,8 +46,6 @@ end
 
 deriving instance ToJson for SymbolInfo
 
-deriving instance ToJson for Variable, Goal
-
 deriving instance ToJson for LineInfo
 
 section
