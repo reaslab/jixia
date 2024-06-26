@@ -4,13 +4,8 @@ Released under the Apache 2.0 license as described in the file LICENSE.
 Authors: Tony Beta Lambda
 -/
 import Lean
-import Analyzer.Basic
-import Analyzer.Process.Import
-import Analyzer.Process.Declaration
-import Analyzer.Process.Symbol
-import Analyzer.Process.Tactic
-import Analyzer.Process.Line
-import Analyzer.Process.AST
+import Analyzer.Types
+import Analyzer.Plugin
 import Analyzer.Output
 
 open Lean Elab Meta
@@ -33,9 +28,8 @@ def PluginOption.output {α : Type _} [ToJson α] (a : α) : PluginOption → IO
     IO.FS.withFile path .write fun h => h.putStrLn <| toJson a |>.compress
 
 elab "#define_options_structure" structName:ident : command => do
-  let plugins ← pluginRef.get
-  let fieldDecls ← plugins.foldM (init := #[]) fun a name _ => do
-    return a.push (← `(structExplicitBinder| ($(mkIdent name) : PluginOption)))
+  let fieldDecls ← Process.plugins.mapM fun (name, _) => do
+    return (← `(structExplicitBinder| ($(mkIdent name) : PluginOption)))
   let body ← `(structFields| $fieldDecls*)
   let cmd ← `(structure $structName where $body:structFields)
   elabCommand cmd
@@ -43,9 +37,8 @@ elab "#define_options_structure" structName:ident : command => do
 #define_options_structure Options
 
 elab "impl_onLoad" : term => do
-  let plugins ← pluginRef.get
   let param ← mkFreshBinderName
-  let body ← plugins.foldM (init := #[]) fun a name plugin => do
+  let body ← Process.plugins.foldlM (init := #[]) fun a (name, plugin) => do
     if let some p := plugin.onLoad then do
       let cond := mkIdent (param ++ name ++ (Name.mkSimple "isPresent"))
       return a.push (← `(doSeqItem| if $cond then $(mkIdent p):term))
@@ -61,9 +54,8 @@ def hasHead (expr : Expr) (name : Name) : MetaM Bool :=
     isDefEq expr (← mkAppM name #[mvar])
 
 elab "impl_process" : term => do
-  let plugins ← pluginRef.get
   let param ← mkFreshBinderName
-  let body ← plugins.foldM (init := #[]) fun a name plugin => do
+  let body ← Process.plugins.mapM fun (name, plugin) => do
     let cond := mkIdent (param ++ name ++ (Name.mkSimple "isPresent"))
     let action := mkIdent (param ++ name ++ (Name.mkSimple "output"))
     let getResult := plugin.getResult
@@ -74,7 +66,7 @@ elab "impl_process" : term => do
       `($(mkIdent getResult))
     else
       throwError "getResult must be either CommandElabM or FrontendM"
-    return a.push (← `(doSeqItem| if $cond then
+    return (← `(doSeqItem| if $cond then
       $action:term (← $term)
     ))
   let term ← `(fun $(mkIdent param) => do $body*)

@@ -4,7 +4,7 @@ Released under the Apache 2.0 license as described in the file LICENSE.
 Authors: Tony Beta Lambda
 -/
 import Lean
-import Analyzer.Basic
+import Analyzer.Types
 import Analyzer.Goal
 
 open Lean Elab Meta Command
@@ -40,7 +40,5 @@ def getResult : CommandElabM (Array TacticRunInfo) := do
       before := ← Goal.fromInfoBefore ci ti,
       after := ← Goal.fromInfoAfter ci ti,
     }
-
-initialize registerPlugin `tactic ``getResult ``onLoad
 
 end Analyzer.Process.Tactic

@@ -4,7 +4,7 @@ Released under the Apache 2.0 license as described in the file LICENSE.
 Authors: Tony Beta Lambda
 -/
 import Lean
-import Analyzer.Basic
+import Analyzer.Types
 
 open Lean Elab Term Command Frontend Parser
 
@@ -56,7 +56,5 @@ def getResult : CommandElabM (Array SymbolInfo) := do
     return a.push si
   let a ← env.constants.map₁.foldM f #[]
   env.constants.map₂.foldlM f a
-
-initialize registerPlugin `symbol ``getResult
 
 end Analyzer.Process.Symbol

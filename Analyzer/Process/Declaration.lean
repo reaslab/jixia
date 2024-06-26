@@ -3,8 +3,8 @@ Copyright (c) 2024 BICMR@PKU. All rights reserved.
 Released under the Apache 2.0 license as described in the file LICENSE.
 Authors: Tony Beta Lambda
 -/
-import Analyzer.Basic
 import Lean
+import Analyzer.Types
 
 open Lean Elab Command Parser Term
 open TSyntax.Compat
@@ -191,7 +191,5 @@ def onLoad : CommandElabM Unit := do
   }
 
 def getResult : CommandElabM (Array DeclarationInfo) := declRef.get
-
-initialize registerPlugin `declaration ``getResult ``onLoad
 
 end Analyzer.Process.Declaration

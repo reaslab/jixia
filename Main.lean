@@ -3,7 +3,7 @@ Copyright (c) 2024 BICMR@PKU. All rights reserved.
 Released under the Apache 2.0 license as described in the file LICENSE.
 Authors: Tony Beta Lambda
 -/
-import Analyzer.Basic
+import Analyzer.Types
 import Analyzer.Load
 import Analyzer.Process
 import Cli
@@ -20,13 +20,12 @@ def parseFlag (p : Parsed) (s : String) : PluginOption :=
   | some f => .json <| .mk <| f.as! String
 
 elab "impl_parseOptions" : term => do
-  let plugins ← pluginRef.get
   let param ← mkFreshBinderName
-  let fields ← plugins.foldM (init := #[]) fun a name _ => do
+  let fields ← Process.plugins.mapM fun (name, _) => do
     let lval ← `(structInstLVal| $(mkIdent name):ident)
     let nameStr := Syntax.mkStrLit name.getString!
     let val ← `(parseFlag $(mkIdent param) $nameStr)
-    return a.push <| ← `(structInstField| $lval := $val)
+    return ← `(structInstField| $lval := $val)
   let val ← `(fun $(mkIdent param) => { $fields* })
   let type ← `(Parsed → Options)
   elabTerm val (← elabTerm type none)

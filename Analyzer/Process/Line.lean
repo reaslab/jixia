@@ -4,7 +4,7 @@ Released under the Apache 2.0 license as described in the file LICENSE.
 Authors: Tony Beta Lambda
 -/
 import Lean
-import Analyzer.Basic
+import Analyzer.Types
 import Analyzer.Goal
 
 open Lean Elab Meta Command
@@ -27,7 +27,5 @@ def getResult : CommandElabM (Array LineInfo) := do
       start := p,
       state := ← trees.concatMapM fun tree => getGoalsAt tree fileMap p
     }
-
-initialize registerPlugin `line ``getResult ``onLoad
 
 end Analyzer.Process.Line
