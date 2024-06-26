@@ -27,14 +27,14 @@ def PluginOption.output {α : Type _} [ToJson α] (a : α) : PluginOption → IO
   | .json path =>
     IO.FS.withFile path .write fun h => h.putStrLn <| toJson a |>.compress
 
-elab "#define_options_structure" structName:ident : command => do
+elab "define_options_structure%" structName:ident : command => do
   let fieldDecls ← Process.plugins.mapM fun (name, _) => do
     return (← `(structExplicitBinder| ($(mkIdent name) : PluginOption)))
   let body ← `(structFields| $fieldDecls*)
   let cmd ← `(structure $structName where $body:structFields)
   elabCommand cmd
 
-#define_options_structure Options
+define_options_structure% Options
 
 elab "impl_onLoad" : term => do
   let param ← mkFreshBinderName
