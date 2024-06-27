@@ -177,7 +177,7 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
 
 initialize declRef : IO.Ref (Array DeclarationInfo) ← IO.mkRef #[]
 
-def handleCommand (stx : Syntax) : CommandElabM Unit :=
+def handleDeclaration (stx : Syntax) : CommandElabM Unit :=
   withEnableInfoTree false do
     let info ← getDeclarationInfo stx
     declRef.modify fun a => a.push info
@@ -186,8 +186,8 @@ def handleCommand (stx : Syntax) : CommandElabM Unit :=
 def onLoad : CommandElabM Unit := do
   modifyEnv fun env => commandElabAttribute.ext.addEntry env {
     key := ``Parser.Command.declaration,
-    declName := ``handleCommand,
-    value := handleCommand,
+    declName := ``handleDeclaration,
+    value := handleDeclaration,
   }
 
 def getResult : CommandElabM (Array DeclarationInfo) := declRef.get
