@@ -32,6 +32,15 @@ where
       | .proj _ _ e => go e
 
 def getSymbolInfo (name : Name) (info : ConstantInfo) : TermElabM SymbolInfo := do
+  let kind := match info with
+    | .axiomInfo _ => "axiom"
+    | .defnInfo _ => "def"
+    | .thmInfo _ => "theorem"
+    | .opaqueInfo _ => "opaque"
+    | .quotInfo _ => "quot"
+    | .inductInfo _ => "inductive"
+    | .ctorInfo _ => "constructor"
+    | .recInfo _ => "recursor"
   let type := info.toConstantVal.type
   let isProp ← try
     let prop := Expr.sort 0
@@ -46,7 +55,7 @@ def getSymbolInfo (name : Name) (info : ConstantInfo) : TermElabM SymbolInfo := 
     pure type.dbgToString
   let typeReferences := references info.type
   let valueReferences := info.value?.map references
-  return { name, type, typeReferences, valueReferences, isProp }
+  return { kind, name, type, typeReferences, valueReferences, isProp }
 
 def getResult : CommandElabM (Array SymbolInfo) := do
   let env ← getEnv

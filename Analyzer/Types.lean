@@ -39,6 +39,7 @@ inductive DeclarationInfo where
   | ofInductive : InductiveInfo → DeclarationInfo
 
 structure SymbolInfo where
+  kind : String
   name : Name
   type : String
   /-- Names of constants that the type of this symbol references.  Mathematically, this roughly means "notions
