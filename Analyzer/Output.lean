@@ -30,6 +30,15 @@ def _root_.Lean.Syntax.isOriginal (stx : Syntax) : Bool :=
   | some (.original ..) => true
   | _ => false
 
+def _root_.Lean.Name.toArray : Name → Array Json
+  | .anonymous => #[]
+  | .str xs x => xs.toArray.push x
+  | .num xs x => xs.toArray.push x
+
+section NameAsArray
+local instance : ToJson Name where
+  toJson x := toJson x.toArray
+
 section
 local instance : ToJson Syntax where
   toJson x := toJson x.getRange?
@@ -60,4 +69,5 @@ end
 
 deriving instance ToJson for SourceInfo, Syntax.Preresolved, Syntax
 
+end NameAsArray
 end Analyzer

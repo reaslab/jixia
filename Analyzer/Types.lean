@@ -18,7 +18,7 @@ namespace Analyzer
 
 /-- Information about a declaration command in source file. -/
 structure BaseDeclarationInfo where
-  kind : Name
+  kind : String
   /-- Syntax node corresponding to the name of this declaration. -/
   id : Syntax
   /-- The identifier contained in `id`, even if it is generated. -/

@@ -110,7 +110,7 @@ def getConstructorInfo (parentName : Name) (stx : Syntax) : CommandElabM BaseDec
     let (binders, type) := expandOptDeclSig stx[4]
     let params ← liftTermElabM <| binders.getArgs.concatMapM toBinderViews
     return {
-      kind := `ctor,
+      kind := "ctor",
       id,
       name,
       fullname,
@@ -126,6 +126,8 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
   let modifiers ← elabModifiers stx[0]
   let decl := stx[1]
   let kind := decl.getKind
+
+  let .str _ kindStr := kind | unreachable!
 
   let (id, binders, type, value) := ← if isDefLike decl then do
     let defView ← mkDefView modifiers decl
@@ -158,7 +160,7 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
     #[]
 
   let info := {
-    kind,
+    kind := kindStr,
     id,
     name,
     fullname,
