@@ -111,6 +111,7 @@ def getConstructorInfo (parentName : Name) (stx : Syntax) : CommandElabM BaseDec
     let params ← liftTermElabM <| binders.getArgs.concatMapM toBinderViews
     return {
       kind := "ctor",
+      ref := stx,
       id,
       name,
       fullname,
@@ -161,6 +162,7 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
 
   let info := {
     kind := kindStr,
+    ref := stx,
     id,
     name,
     fullname,
