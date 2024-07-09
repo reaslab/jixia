@@ -69,6 +69,7 @@ structure TacticRunInfo where
   references : HashSet Name
   before : Array Goal
   after : Array Goal
+  extra? : Option Json
 
 structure LineInfo where
   start : String.Pos

@@ -31,14 +31,57 @@ partial def references : Syntax → HashSet Name
 def onLoad : CommandElabM Unit :=
   enableInfoTree
 
+open Elab.Tactic
+
+def getSimpStats := fun stx => withMainContext do
+  let { ctx, simprocs, dischargeWrapper } ← mkSimpContext stx (eraseLocal := false)
+  let stats ← dischargeWrapper.with fun discharge? =>
+    simpLocation ctx simprocs discharge? (expandOptLocation stx[5])
+  return stats
+
+def getSimpAllStats := fun stx => withMainContext do
+  let { ctx, simprocs, .. } ← mkSimpContext stx (eraseLocal := true) (kind := .simpAll) (ignoreStarArg := true)
+  let (_, stats) ← simpAll (← getMainGoal) ctx (simprocs := simprocs)
+  return stats
+
+def ofSimpStats (stx : Syntax) : TacticM Simp.Stats :=
+  match stx.getKind with
+    | ``Parser.Tactic.simpAll => getSimpAllStats stx
+    | _ => getSimpStats stx
+
+def runCore (x : TacticM Simp.Stats)
+            (ctx : Tactic.Context)
+            (s : Tactic.State) : TermElabM (Simp.Stats × Tactic.State) :=
+  x ctx |>.run s
+
+def runCore' (x : TacticM Simp.Stats)
+             (ctx : Tactic.Context)
+             (s : Tactic.State) : TermElabM Simp.Stats := do
+  Prod.fst <$> runCore x ctx s
+
 def getResult : CommandElabM (Array TacticRunInfo) := do
   let info := (← getInfoTrees).foldl (init := #[]) fun info tree => tree.foldInfo collectTacticInfo info
   info.mapM fun (ci, ti) => do
+
+    let mut extra : Option Json := none
+
+    if ti.stx.isOfKind |> List.any [
+      ``Parser.Tactic.simp,
+      ``Parser.Tactic.simpAll,
+    ] then
+      let tacticM := ofSimpStats ti.stx
+      let termElabM := runCore' tacticM { elaborator := .anonymous } { goals := ti.goalsBefore }
+      let metaM := Term.TermElabM.run' termElabM
+      let simpStats ← { ci with mctx := ti.mctxBefore }.runMetaM {} metaM
+      let usedTheorems := simpStats.usedTheorems.foldl (init := #[]) fun ps k _ => ps.push k.key
+      extra := json% { usedTheorems: $(usedTheorems) }
+
     return {
       tactic := ti.stx,
       references := references ti.stx,
       before := ← Goal.fromInfoBefore ci ti,
       after := ← Goal.fromInfoAfter ci ti,
+      extra? := extra
     }
 
 end Analyzer.Process.Tactic
