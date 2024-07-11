@@ -35,71 +35,58 @@ open Elab.Tactic
 
 namespace Simp
 
-def runCore (x : TacticM Simp.Stats)
-            (ctx : Tactic.Context)
-            (s : Tactic.State) : TermElabM (Simp.Stats × Tactic.State) :=
-  x ctx |>.run s
-
-def runCore' (x : TacticM Simp.Stats)
-             (ctx : Tactic.Context)
-             (s : Tactic.State) : TermElabM Simp.Stats := do
-  Prod.fst <$> runCore x ctx s
-
-def getSimpStats : Syntax → TacticM Simp.Stats := fun stx => withMainContext do
+def getSimpStats (stx : Syntax) : TacticM Simp.Stats := withMainContext do
   let { ctx, simprocs, dischargeWrapper } ← mkSimpContext stx (eraseLocal := false)
-  let stats ← dischargeWrapper.with fun discharge? =>
+  dischargeWrapper.with fun discharge? =>
     simpLocation ctx simprocs discharge? (expandOptLocation stx[5])
-  return stats
 
-def getSimpAllStats : Syntax → TacticM Simp.Stats := fun stx => withMainContext do
+def getSimpAllStats (stx : Syntax) : TacticM Simp.Stats := withMainContext do
   let { ctx, simprocs, .. } ← mkSimpContext stx (eraseLocal := true) (kind := .simpAll) (ignoreStarArg := true)
   let (_, stats) ← simpAll (← getMainGoal) ctx (simprocs := simprocs)
   return stats
 
-def getDSimp : Syntax → TacticM Simp.Stats := fun stx => do
-  let { ctx, simprocs, .. } ← withMainContext <| mkSimpContext stx (eraseLocal := false) (kind := .dsimp)
+def getDSimpStats (stx : Syntax) : TacticM Simp.Stats := withMainContext do
+  let { ctx, simprocs, .. } ← mkSimpContext stx (eraseLocal := false) (kind := .dsimp)
   let (_, stats) ← dsimpGoal (← getMainGoal) ctx (simprocs := simprocs)
   return stats
 
-def getUsedTheorems (ci : ContextInfo) (ti : TacticInfo) : CommandElabM (Option Json) := do
+def getStats (stx : Syntax) : TacticM Simp.Stats :=
+  match stx.getKind with
+  | ``Parser.Tactic.simpAll => getSimpAllStats stx
+  | ``Parser.Tactic.dsimp => getDSimpStats stx
+  | _ => getSimpStats stx
+
+def getUsedTheorems (ci : ContextInfo) (ti : TacticInfo) : CommandElabM Json := do
     if ti.stx.isOfKind |> List.any [
       ``Parser.Tactic.simp,
       ``Parser.Tactic.simpAll,
       ``Parser.Tactic.dsimp,
-      -- ``Parser.Tactic.simpa,
     ] then
-      let tacticM := match ti.stx.getKind with
-        | ``Parser.Tactic.simpAll => getSimpAllStats ti.stx
-        | ``Parser.Tactic.dsimp => getDSimp ti.stx
-        | _ => getSimpStats ti.stx
-      let termElabM := runCore' tacticM { elaborator := .anonymous } { goals := ti.goalsBefore }
-      let metaM := Term.TermElabM.run' termElabM
-      let simpStats ← { ci with mctx := ti.mctxBefore }.runMetaM {} metaM
-      let usedTheorems := simpStats.usedTheorems.foldl (init := #[]) fun ps k _ => ps.push k.key
-      return json% { usedTheorems: $(usedTheorems) }
+      let simpStats ← { ci with mctx := ti.mctxBefore }.runMetaM {} <|
+        getStats ti.stx
+        { elaborator := .anonymous } |>.run' { goals := ti.goalsBefore }
+        |>.run'
+      let usedTheorems := simpStats.usedTheorems.foldl (init := #[]) fun a k _ => a.push k.key
+      return json% {
+        usedTheorems: $(usedTheorems)
+      }
     else
-      return none
+      return .null
 
 end Simp
-
-def mergeOptionJson : Option Json → Option Json → Option Json
-  | fst, none => fst
-  | none, snd => snd
-  | some data, some append => some (data.mergeObj append)
 
 def getResult : CommandElabM (Array TacticRunInfo) := do
   let info := (← getInfoTrees).foldl (init := #[]) fun info tree => tree.foldInfo collectTacticInfo info
   info.mapM fun (ci, ti) => do
-
-    let mut extra : Option Json := none
-    extra := mergeOptionJson extra (← Simp.getUsedTheorems ci ti)
+    let mut extra : Json := .null
+    extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
 
     return {
       tactic := ti.stx,
       references := references ti.stx,
       before := ← Goal.fromInfoBefore ci ti,
       after := ← Goal.fromInfoAfter ci ti,
-      extra? := extra
+      extra? := if extra.isNull then none else extra,
     }
 
 end Analyzer.Process.Tactic
