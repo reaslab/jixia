@@ -6,13 +6,31 @@ Authors: Tony Beta Lambda
 import Lean
 import Analyzer.Types
 
-open Lean Elab Meta
+open Lean Elab Meta Tactic
+
+namespace Lean.Elab.Tactic.TacticM
+
+def runWithInfoBefore {α : Type} (ci : ContextInfo) (ti : TacticInfo) (x : TacticM α) : IO α :=
+  { ci with mctx := ti.mctxBefore }.runMetaM {} <|
+    x { elaborator := .anonymous, recover := false } |>.run' { goals := ti.goalsBefore }
+    |>.run'
+
+def runWithInfoAfter {α : Type} (ci : ContextInfo) (ti : TacticInfo) (x : TacticM α) : IO α :=
+  { ci with mctx := ti.mctxAfter }.runMetaM {} <|
+    x { elaborator := .anonymous, recover := false } |>.run' { goals := ti.goalsAfter }
+    |>.run'
+
+def runWithInfo {α : Type} (useAfter : Bool) : ContextInfo → TacticInfo → TacticM α → IO α :=
+  if useAfter then runWithInfoAfter else runWithInfoBefore
+
+end Lean.Elab.Tactic.TacticM
+
 
 namespace Analyzer.Goal
 
 -- see Meta.ppGoal
 def fromMVar (goal : MVarId) : MetaM Goal :=
-  goal.withContext do
+  withEnableInfoTree false <| goal.withContext do
     let lctx ← getLCtx
     let lctx : LocalContext := lctx.sanitizeNames.run' { options := ← getOptions }
     let mut context := Array.mkEmpty lctx.size
@@ -34,13 +52,7 @@ def fromMVar (goal : MVarId) : MetaM Goal :=
     let tag ← goal.getTag
     return { tag, context, type }
 
-def fromInfoBefore (ci : ContextInfo) (ti : TacticInfo) : IO (Array Goal) :=
-  { ci with mctx := ti.mctxBefore }.runMetaM {} <| ti.goalsBefore.toArray.mapM Goal.fromMVar
-
-def fromInfoAfter (ci : ContextInfo) (ti : TacticInfo) : IO (Array Goal) :=
-  { ci with mctx := ti.mctxAfter }.runMetaM {} <| ti.goalsAfter.toArray.mapM Goal.fromMVar
-
-def fromInfoBeforeOrAfter (useAfter : Bool) : ContextInfo → TacticInfo → IO (Array Goal) :=
-  if useAfter then fromInfoAfter else fromInfoBefore
+def fromTactic : TacticM (Array Goal) := do
+  (← getUnsolvedGoals).toArray.mapM fun mvar => Goal.fromMVar mvar
 
 end Analyzer.Goal

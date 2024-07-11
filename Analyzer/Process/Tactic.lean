@@ -62,10 +62,7 @@ def getUsedTheorems (ci : ContextInfo) (ti : TacticInfo) : CommandElabM Json := 
       ``Parser.Tactic.simpAll,
       ``Parser.Tactic.dsimp,
     ] then
-      let simpStats ← { ci with mctx := ti.mctxBefore }.runMetaM {} <|
-        getStats ti.stx
-        { elaborator := .anonymous } |>.run' { goals := ti.goalsBefore }
-        |>.run'
+      let simpStats ← getStats ti.stx |>.runWithInfoBefore ci ti
       let usedTheorems := simpStats.usedTheorems.foldl (init := #[]) fun a k _ => a.push k.key
       return json% {
         usedTheorems: $(usedTheorems)
@@ -84,8 +81,8 @@ def getResult : CommandElabM (Array TacticRunInfo) := do
     return {
       tactic := ti.stx,
       references := references ti.stx,
-      before := ← Goal.fromInfoBefore ci ti,
-      after := ← Goal.fromInfoAfter ci ti,
+      before := ← Goal.fromTactic.runWithInfoBefore ci ti,
+      after := ← Goal.fromTactic.runWithInfoAfter ci ti,
       extra? := if extra.isNull then none else extra,
     }
 
