@@ -45,7 +45,14 @@ local instance : ToJson Syntax where
 local instance : ToJson (Option Syntax) where
   toJson x := toJson <| x.bind Syntax.getRange?
 deriving instance ToJson for Attribute, Modifiers, BinderView
+end
 
+section
+local instance : ToJson Syntax where
+  toJson x := json% {
+    range: $(x.getRange?),
+    original: $(x.isOriginal)
+  }
 deriving instance ToJson for BaseDeclarationInfo, InductiveInfo
 instance : ToJson DeclarationInfo where
   toJson
