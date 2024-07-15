@@ -22,8 +22,7 @@ def collectTacticInfo (ctx : ContextInfo) (info : Info) (a : Array (ContextInfo 
 partial def references : Syntax → HashSet Name
   | .missing => .empty
   | .node _ _ args =>
-    args.map references |>.foldl (init := .empty) fun s t =>
-      HashSet.fold (fun s a => HashSet.insert s a) s t
+    args.map references |>.foldl (init := .empty) fun s t => s.fold (fun s a => s.insert a) t
   | .atom _ _ => .empty
   | .ident _ _ name _ => .empty |>.insert name
 
@@ -36,7 +35,7 @@ def getResult : CommandElabM (Array TacticRunInfo) := do
     let mut extra : Json := .null
     extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
 
-    return {
+    pure {
       tactic := ti.stx,
       references := references ti.stx,
       before := ← Goal.fromTactic.runWithInfoBefore ci ti,
