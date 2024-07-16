@@ -21,9 +21,8 @@ theorem simp_test (x y z : Nat) (p : Nat → Prop) (h : p (x * y))
 
 theorem dsimp_test (x y z : Nat) (p : Nat → Prop) (h : p (x * y))
     : p ((x + 0) * (0 + y * 1 + z * 0)) := by
-  dsimp
-  simp
-  assumption
+  let h₁ := Nat.mul_zero
+  simp_all
 
 /-- pow_succ x n = pow x n.succ -/
 def pow_succ [Mul α] (x : α) : Nat → α
