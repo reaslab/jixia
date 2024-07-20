@@ -39,6 +39,10 @@ inductive DeclarationInfo where
   | ofBase : BaseDeclarationInfo → DeclarationInfo
   | ofInductive : InductiveInfo → DeclarationInfo
 
+def DeclarationInfo.toBaseDeclarationInfo : DeclarationInfo → BaseDeclarationInfo
+  | .ofBase info => info
+  | .ofInductive info => info.toBaseDeclarationInfo
+
 structure SymbolInfo where
   kind : String
   name : Name

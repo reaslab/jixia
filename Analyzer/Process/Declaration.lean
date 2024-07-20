@@ -98,6 +98,51 @@ def toBinderViews (stx : Syntax) : TermElabM (Array BinderView) := do
     throwUnsupportedSyntax
 -- end of Lean.Elab.Binders
 
+-- Lean.Elab.Declaration
+/-- Return `true` if `stx` is a `Command.declaration`, and it is a definition that always has a name. -/
+private def isNamedDef (stx : Syntax) : Bool :=
+  if !stx.isOfKind ``Lean.Parser.Command.declaration then
+    false
+  else
+    let decl := stx[1]
+    let k := decl.getKind
+    k == ``Lean.Parser.Command.abbrev ||
+    k == ``Lean.Parser.Command.definition ||
+    k == ``Lean.Parser.Command.theorem ||
+    k == ``Lean.Parser.Command.opaque ||
+    k == ``Lean.Parser.Command.axiom ||
+    k == ``Lean.Parser.Command.inductive ||
+    k == ``Lean.Parser.Command.classInductive ||
+    k == ``Lean.Parser.Command.structure
+
+/-- Return `true` if `stx` is an `instance` declaration command -/
+private def isInstanceDef (stx : Syntax) : Bool :=
+  stx.isOfKind ``Lean.Parser.Command.declaration &&
+  stx[1].getKind == ``Lean.Parser.Command.instance
+
+/-- Return `some name` if `stx` is a definition named `name` -/
+private def getDefName? (stx : Syntax) : Option Name := do
+  if isNamedDef stx then
+    let (id, _) := expandDeclIdCore stx[1][1]
+    some id
+  else if isInstanceDef stx then
+    let optDeclId := stx[1][3]
+    if optDeclId.isNone then none
+    else
+      let (id, _) := expandDeclIdCore optDeclId[0]
+      some id
+  else
+    none
+
+private def hasDeclNamespace (stx : Syntax) : MacroM (Bool) := do
+  let some name := getDefName? stx | return false
+  let scpView := extractMacroScopes name
+  match scpView.name with
+  | .str .anonymous _ => return false
+  | .str .. => return true
+  | _ => return false
+-- end of Lean.Elab.Declaration
+
 -- see Elab.elabInductive, which is of course also private
 def getConstructorInfo (parentName : Name) (stx : Syntax) : CommandElabM BaseDeclarationInfo := do
     -- def ctor := leading_parser optional docComment >> "\n| " >> declModifiers >> rawIdent >> optDeclSig
@@ -181,18 +226,35 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
 
 initialize declRef : IO.Ref (Array DeclarationInfo) ← IO.mkRef #[]
 
+def handleProofWanted (stx : Syntax) : CommandElabM Unit := do
+  let mods := stx[0]
+  let name := stx[2]
+  let sig := stx[3]
+  let stx' ← `($mods:declModifiers axiom $name $sig)
+  elabCommand stx'
+  declRef.modify fun a => a.modify (a.size - 1) fun info =>
+    .ofBase { info.toBaseDeclarationInfo with kind := "proof_wanted" }
+
 def handleDeclaration (stx : Syntax) : CommandElabM Unit :=
   withEnableInfoTree false do
+    if ← liftMacroM <| hasDeclNamespace stx then
+      throwUnsupportedSyntax
     let info ← getDeclarationInfo stx
     declRef.modify fun a => a.push info
     throwUnsupportedSyntax
 
 def onLoad : CommandElabM Unit := do
-  modifyEnv fun env => commandElabAttribute.ext.addEntry env {
-    key := ``Parser.Command.declaration,
-    declName := ``handleDeclaration,
-    value := handleDeclaration,
-  }
+  modifyEnv fun env => env |>
+    (commandElabAttribute.ext.addEntry · {
+      key := ``Parser.Command.declaration,
+      declName := ``handleDeclaration,
+      value := handleDeclaration,
+    }) |>
+    (commandElabAttribute.ext.addEntry · {
+      key := `proof_wanted,
+      declName := ``handleProofWanted,
+      value := handleProofWanted,
+    })
 
 def getResult : CommandElabM (Array DeclarationInfo) := declRef.get
 
