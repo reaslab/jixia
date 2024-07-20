@@ -233,7 +233,7 @@ def handleProofWanted (stx : Syntax) : CommandElabM Unit := do
   let stx' ← `($mods:declModifiers axiom $name $sig)
   elabCommand stx'
   declRef.modify fun a => a.modify (a.size - 1) fun info =>
-    .ofBase { info.toBaseDeclarationInfo with kind := "proof_wanted" }
+    .ofBase { info.toBaseDeclarationInfo with kind := "proofWanted" }
 
 def handleDeclaration (stx : Syntax) : CommandElabM Unit :=
   withEnableInfoTree false do
