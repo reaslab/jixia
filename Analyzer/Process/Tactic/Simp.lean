@@ -52,7 +52,7 @@ def getUsedTheorems (ci : ContextInfo) (ti : TacticInfo) : CommandElabM Json := 
     ] then
       let usedTheorems ← TacticM.runWithInfoBefore ci ti <| withMainContext do
         let simpStats ← getStats ti.stx
-        simpStats.usedTheorems.foldlM (init := #[]) fun a k _ => do return a.push (← k.getName)
+        simpStats.usedTheorems.toArray.foldlM (init := #[]) fun a k _ => do return a.push (← k.getName)
       return json% {
         usedTheorems: $(usedTheorems)
       }
