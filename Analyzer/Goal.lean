@@ -38,15 +38,25 @@ def fromMVar (goal : MVarId) : MetaM Goal :=
       if ldecl.isImplementationDetail then
         continue
       let var ← match ldecl with
-      | .cdecl _ _ name type .. => do
+      | .cdecl _ id name type .. => do
         let type ← instantiateMVars type
         let type ← ppExpr type
-        pure { name := name.simpMacroScopes.toString, type := type.pretty, value? := .none }
-      | .ldecl _ _ name type value .. => do
+        pure {
+          id := id.name,
+          name := name.simpMacroScopes,
+          type := type.pretty,
+          value? := none
+        }
+      | .ldecl _ id name type value .. => do
         let type ← instantiateMVars type
         let type ← ppExpr type
         let value ← ppExpr value
-        pure { name := name.simpMacroScopes.toString, type := type.pretty, value? := value.pretty }
+        pure {
+          id := id.name,
+          name := name.simpMacroScopes,
+          type := type.pretty,
+          value? := value.pretty
+        }
       context := context.push var
     let type := (← ppExpr (← goal.getType)).pretty
     let tag ← goal.getTag

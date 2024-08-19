@@ -56,16 +56,15 @@ structure SymbolInfo where
   isProp : Bool
 
 structure Variable where
-  name : String
+  id : Name
+  name : Name
   type : String
   value? : Option String
-deriving ToJson
 
 structure Goal where
   tag : Name
   context : Array Variable
   type : String
-deriving ToJson
 
 structure TacticRunInfo where
   tactic : Syntax
