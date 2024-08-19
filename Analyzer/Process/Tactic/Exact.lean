@@ -15,6 +15,15 @@ open LibrarySearch
 
 namespace Analyzer.Process.Tactic.Exact
 
+inductive GoalHint
+  | exact : String → GoalHint
+  | suggestions : List String → GoalHint
+
+instance : ToString GoalHint where
+  toString
+    | .exact s => s
+    | .suggestions s => s.toString
+
 def toNamingMessage (ref : Syntax) (msgData : MessageData) : CoreM String := do
   let pos    := ref.getPos?.getD 0
   let endPos := ref.getTailPos?.getD pos
@@ -41,10 +50,10 @@ def toNamingMessage (ref : Syntax) (msgData : MessageData) : CoreM String := do
 
 def getGoalExactHint (ref : Syntax)
                      (required: Option (Array (TSyntax `term)) := none)
-    : TacticM (Option String) := do
+    : TacticM GoalHint := do
   let mvar ← getMainGoal
   let (_, goal) ← mvar.intros
-  let tacticM : TacticM (Option String) := do
+  let tacticM : TacticM GoalHint := do
     let required := (← (required.getD #[]).mapM getFVarId).toList.map .fvar
     let tactic := fun exfalso =>
       solveByElim required (exfalso := exfalso) (maxDepth := 6)
@@ -54,8 +63,15 @@ def getGoalExactHint (ref : Syntax)
     match ← librarySearch goal tactic allowFailure with
     | none =>
       let expr := (← instantiateMVars (mkMVar mvar)).headBeta
-      return ← toNamingMessage ref m!"{expr}"
-    | _ => return none
+      let s ← toNamingMessage ref m!"{expr}"
+      return GoalHint.exact s
+    | some suggestions =>
+      let results ← suggestions.mapM fun (_, suggestionMCtx) =>
+        withMCtx suggestionMCtx do
+          let expr := (← instantiateMVars (mkMVar mvar)).headBeta
+          toNamingMessage ref m!"{expr}"
+      admitGoal goal
+      return GoalHint.suggestions results.toList
   return ← goal.withContext tacticM
 
 end Analyzer.Process.Tactic.Exact
