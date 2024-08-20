@@ -65,6 +65,8 @@ structure Goal where
   tag : Name
   context : Array Variable
   type : String
+  typeUses : Array Name
+  valueUses : Array Name
 
 structure TacticRunInfo where
   tactic : Syntax

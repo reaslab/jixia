@@ -30,17 +30,23 @@ def onLoad : CommandElabM Unit :=
   enableInfoTree
 
 def getResult : CommandElabM (Array TacticRunInfo) := do
-  let info := (← getInfoTrees).foldl (init := #[]) fun info tree => tree.foldInfo collectTacticInfo info
-  info.mapM fun (ci, ti) => do
-    let mut extra : Json := .null
-    extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
+  let trees ← getInfoTrees
+  trees.toArray.concatMapM fun tree => do
+    let info := tree.foldInfo (init := #[]) collectTacticInfo
+    if let some (ci, _) := info[0]? then
+      let mctx := ci.mctx
+      info.mapM fun (ci, ti) => do
+        let mut extra : Json := .null
+        extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
 
-    pure {
-      tactic := ti.stx,
-      references := references ti.stx,
-      before := ← Goal.fromTactic.runWithInfoBefore ci ti,
-      after := ← Goal.fromTactic.runWithInfoAfter ci ti,
-      extra? := if extra.isNull then none else extra,
-    }
+        pure {
+          tactic := ti.stx,
+          references := references ti.stx,
+          before := ← Goal.fromTactic mctx |>.runWithInfoBefore ci ti,
+          after := ← Goal.fromTactic mctx |>.runWithInfoAfter ci ti,
+          extra? := if extra.isNull then none else extra,
+        : TacticRunInfo}
+    else
+      pure #[]
 
 end Analyzer.Process.Tactic

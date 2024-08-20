@@ -8,7 +8,6 @@ import Analyzer.Process.Import
 import Analyzer.Process.Declaration
 import Analyzer.Process.Symbol
 import Analyzer.Process.Tactic
-import Analyzer.Process.Line
 import Analyzer.Process.AST
 
 open Lean
@@ -24,7 +23,6 @@ protected def plugins : Array (Name × Plugin) := #[
   (`declaration, ⟨ ``Declaration.getResult, ``Declaration.onLoad ⟩),
   (`symbol, ⟨ ``Symbol.getResult, none ⟩),
   (`tactic, ⟨ ``Tactic.getResult, ``Tactic.onLoad ⟩),
-  (`line, ⟨ ``Line.getResult, ``Line.onLoad ⟩),
   (`ast, ⟨ ``AST.getResult, none ⟩ )
 ]
 
