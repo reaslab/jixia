@@ -61,14 +61,15 @@ def fromMVar (finalCtx : MetavarContext) (goal : MVarId) : MetaM Goal :=
           value? := value.pretty
         }
       context := context.push var
-    let type := (← ppExpr (← goal.getType)).pretty
+    let type ← goal.getType
+    let typeStr := (← ppExpr type).pretty
     let tag ← goal.getTag
-    let (typeUses, valueUses) ← withMCtx finalCtx do
-      pure (← getUsedVariables <| .mvar goal, ← getUsedVariables (← goal.getType))
+    let typeUses ← getUsedVariables type
+    let valueUses ← withMCtx finalCtx <| getUsedVariables <| .mvar goal
     return {
       tag,
       context,
-      type,
+      type := typeStr,
       typeUses,
       valueUses,
     }
