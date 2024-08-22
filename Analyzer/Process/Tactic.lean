@@ -26,6 +26,9 @@ partial def references : Syntax → HashSet Name
   | .atom _ _ => .empty
   | .ident _ _ name _ => .empty |>.insert name
 
+def getUsedVariables (e : Expr) : MetaM (Array Name) :=
+  e.collectFVars.run default <&> fun s => s.2.fvarIds |>.map FVarId.name
+
 def onLoad : CommandElabM Unit :=
   enableInfoTree
 
@@ -35,6 +38,14 @@ def getResult : CommandElabM (Array TacticRunInfo) := do
     let info := tree.foldInfo (init := #[]) collectTacticInfo
     if let some (ci, _) := info[0]? then
       let mctx := ci.mctx
+      let getUsedInfo (mvar : MVarId) : MetaM (Option Json) := do
+        let typeUses ← getUsedVariables (← mvar.getType)
+        let valueUses ← withMCtx mctx <| getUsedVariables <| .mvar mvar
+        return json%{
+          typeUses: $(typeUses),
+          valueUses: $(valueUses)
+        }
+
       info.mapM fun (ci, ti) => do
         let mut extra : Json := .null
         extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
@@ -42,8 +53,8 @@ def getResult : CommandElabM (Array TacticRunInfo) := do
         pure {
           tactic := ti.stx,
           references := references ti.stx,
-          before := ← Goal.fromTactic mctx |>.runWithInfoBefore ci ti,
-          after := ← Goal.fromTactic mctx |>.runWithInfoAfter ci ti,
+          before := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoBefore ci ti,
+          after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
           extra? := if extra.isNull then none else extra,
         : TacticRunInfo}
     else

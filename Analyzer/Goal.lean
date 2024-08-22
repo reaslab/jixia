@@ -28,11 +28,8 @@ end Lean.Elab.Tactic.TacticM
 
 namespace Analyzer.Goal
 
-def getUsedVariables (e : Expr) : MetaM (Array Name) :=
-  e.collectFVars.run default <&> fun s => s.2.fvarIds |>.map FVarId.name
-
 -- see Meta.ppGoal
-def fromMVar (finalCtx : MetavarContext) (goal : MVarId) : MetaM Goal :=
+def fromMVar (goal : MVarId) (extraFun : MVarId → MetaM (Option Json) := fun _ => pure none) : MetaM Goal :=
   withEnableInfoTree false <| goal.withContext do
     let lctx ← getLCtx
     let lctx : LocalContext := lctx.sanitizeNames.run' { options := ← getOptions }
@@ -61,20 +58,17 @@ def fromMVar (finalCtx : MetavarContext) (goal : MVarId) : MetaM Goal :=
           value? := value.pretty
         }
       context := context.push var
-    let type ← goal.getType
-    let typeStr := (← ppExpr type).pretty
+    let type := (← ppExpr (← goal.getType)).pretty
     let tag ← goal.getTag
-    let typeUses ← getUsedVariables type
-    let valueUses ← withMCtx finalCtx <| getUsedVariables <| .mvar goal
+    let extra? ← extraFun goal
     return {
       tag,
       context,
-      type := typeStr,
-      typeUses,
-      valueUses,
+      type,
+      extra?,
     }
 
-def fromTactic (finalCtx : MetavarContext) : TacticM (Array Goal) := do
-  (← getUnsolvedGoals).toArray.mapM fun mvar => Goal.fromMVar finalCtx mvar
+def fromTactic (extraFun : MVarId → MetaM (Option Json) := fun _ => pure none) : TacticM (Array Goal) := do
+  (← getUnsolvedGoals).toArray.mapM fun mvar => Goal.fromMVar mvar extraFun
 
 end Analyzer.Goal

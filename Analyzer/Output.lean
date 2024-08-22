@@ -35,8 +35,7 @@ def _root_.Lean.Name.toArray : Name → Array Json
   | .str xs x => xs.toArray.push x
   | .num xs x => xs.toArray.push x
 
-section NameAsArray
-local instance : ToJson Name where
+instance : ToJson Name where
   toJson x := toJson x.toArray
 
 section
@@ -63,8 +62,6 @@ end
 deriving instance ToJson for SymbolInfo
 deriving instance ToJson for Variable, Goal
 
-deriving instance ToJson for LineInfo
-
 section
 local instance : ToJson Syntax where
   toJson x := json% {
@@ -77,5 +74,4 @@ end
 
 deriving instance ToJson for SourceInfo, Syntax.Preresolved, Syntax
 
-end NameAsArray
 end Analyzer

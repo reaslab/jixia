@@ -65,8 +65,7 @@ structure Goal where
   tag : Name
   context : Array Variable
   type : String
-  typeUses : Array Name
-  valueUses : Array Name
+  extra? : Option Json := none
 
 structure TacticRunInfo where
   tactic : Syntax
@@ -74,10 +73,6 @@ structure TacticRunInfo where
   references : HashSet Name
   before : Array Goal
   after : Array Goal
-  extra? : Option Json
-
-structure LineInfo where
-  start : String.Pos
-  state : Array Goal
+  extra? : Option Json := none
 
 end Analyzer
