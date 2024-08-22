@@ -22,7 +22,14 @@ def getSimpAllStats (stx : Syntax) : TacticM Simp.Stats := withMainContext do
 
 def getDSimpStats (stx : Syntax) : TacticM Simp.Stats := withMainContext do
   let { ctx, simprocs, .. } ← mkSimpContext stx (eraseLocal := false) (kind := .dsimp)
-  let (_, stats) ← dsimpGoal (← getMainGoal) ctx (simprocs := simprocs)
+  let loc := expandOptLocation stx[5]
+  let (fvarIds, simplifyTarget) ← match loc with
+  | Location.targets hyps simplifyTarget => do
+      let fvarIds ← getFVarIds hyps
+      pure (fvarIds, simplifyTarget)
+  | Location.wildcard => do
+      pure (← (← getMainGoal).getNondepPropHyps, true)
+  let (_, stats) ← dsimpGoal (← getMainGoal) ctx (simprocs := simprocs) simplifyTarget fvarIds
   return stats
 
 def getStats (stx : Syntax) : TacticM Simp.Stats :=
