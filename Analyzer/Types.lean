@@ -60,11 +60,13 @@ structure Variable where
   name : Name
   type : String
   value? : Option String
+  isProp : Bool
 
 structure Goal where
   tag : Name
   context : Array Variable
   type : String
+  isProp : Bool
   extra? : Option Json := none
 
 structure TacticRunInfo where

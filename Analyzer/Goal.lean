@@ -40,31 +40,31 @@ def fromMVar (goal : MVarId) (extraFun : MVarId → MetaM (Option Json) := fun _
       let var ← match ldecl with
       | .cdecl _ id name type .. => do
         let type ← instantiateMVars type
-        let type ← ppExpr type
         pure {
           id := id.name,
           name := name.simpMacroScopes,
-          type := type.pretty,
-          value? := none
+          type := (← ppExpr type).pretty,
+          value? := none,
+          isProp := (← inferType type).isProp,
         }
       | .ldecl _ id name type value .. => do
         let type ← instantiateMVars type
-        let type ← ppExpr type
-        let value ← ppExpr value
         pure {
           id := id.name,
           name := name.simpMacroScopes,
-          type := type.pretty,
-          value? := value.pretty
+          type := (← ppExpr type).pretty,
+          value? := (← ppExpr value).pretty,
+          isProp := (← inferType type).isProp,
         }
       context := context.push var
-    let type := (← ppExpr (← goal.getType)).pretty
+    let type ← goal.getType
     let tag ← goal.getTag
     let extra? ← extraFun goal
     return {
       tag,
       context,
-      type,
+      type := (← ppExpr type).pretty,
+      isProp := (← inferType type).isProp,
       extra?,
     }
 
