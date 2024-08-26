@@ -77,4 +77,8 @@ structure TacticRunInfo where
   after : Array Goal
   extra? : Option Json := none
 
+structure LineInfo where
+  start : String.Pos
+  state : Array Goal
+
 end Analyzer

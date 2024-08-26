@@ -25,11 +25,12 @@ jixia comes with several plugins.
 - Symbol: info about symbols (or _constants_ in Lean 4 terminology) after elaboration, including their types and
   reference graph.
 - Tactic: infor about tactics used in module, including states before and after execution.
+- Line: proof state at the beginning of each line, as displayed in VSCode infoview.
 - AST: a full dump of parsed commands.
 
 Each plugin can be set to output to a json file or be turned off individually.  For example,
 ```sh
-/path/to/jixia -d Example.decl.json -s Example.sym.json -t Example.tac.json Example.lean
+/path/to/jixia -d Example.decl.json -s Example.sym.json -t Example.tac.json -l Example.lines.json Example.lean
 ```
 will generate the corresponding json files from the declaration, symbol, tactic, and line plugins.  If a flag is
 omitted, the corresponding plugin will not run.

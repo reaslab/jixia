@@ -62,6 +62,8 @@ end
 deriving instance ToJson for SymbolInfo
 deriving instance ToJson for Variable, Goal
 
+deriving instance ToJson for LineInfo
+
 section
 local instance : ToJson Syntax where
   toJson x := json% {
