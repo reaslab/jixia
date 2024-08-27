@@ -69,7 +69,7 @@ structure Goal where
   isProp : Bool
   extra? : Option Json := none
 
-structure TacticRunInfo where
+structure TacticElabInfo where
   tactic : Syntax
   /-- Names referenced in this tactic, including constants and local hypotheses. -/
   references : HashSet Name

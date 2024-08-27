@@ -50,7 +50,7 @@ unsafe def jixiaCommand : Cmd := `[Cli|
     m, «import» : String;  "Import info"
     d, declaration : String;  "Declaration info"
     s, symbol : String;  "Symbol info"
-    t, tactic : String;  "Tactic info"
+    e, elaboration : String;  "Elaboration info"
     l, line : String;  "Line info"
     a, ast : String;  "AST"
     i, initializer;  "Execute initializers"

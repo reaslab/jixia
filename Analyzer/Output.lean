@@ -71,7 +71,7 @@ local instance : ToJson Syntax where
     range: $(x.getRange?),
     original: $(x.isOriginal)
   }
-deriving instance ToJson for TacticRunInfo
+deriving instance ToJson for TacticElabInfo
 end
 
 deriving instance ToJson for SourceInfo, Syntax.Preresolved, Syntax

@@ -8,7 +8,8 @@ import Analyzer.Process.Tactic.Simp
 
 open Lean Elab Meta Command
 
-namespace Analyzer.Process.Tactic
+namespace Analyzer.Process.Elaboration
+open Analyzer.Process.Tactic
 
 @[reducible]
 def String.Range.lt (r : String.Range) (r' : String.Range) : Prop :=
@@ -32,7 +33,7 @@ def getUsedVariables (e : Expr) : MetaM (Array Name) :=
 def onLoad : CommandElabM Unit :=
   enableInfoTree
 
-def getResult : CommandElabM (Array TacticRunInfo) := do
+def getResult : CommandElabM (Array TacticElabInfo) := do
   let trees ← getInfoTrees
   trees.toArray.concatMapM fun tree => do
     let info := tree.foldInfo (init := #[]) collectTacticInfo
@@ -56,8 +57,8 @@ def getResult : CommandElabM (Array TacticRunInfo) := do
           before := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoBefore ci ti,
           after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
           extra? := if extra.isNull then none else extra,
-        : TacticRunInfo}
+        : TacticElabInfo}
     else
       pure #[]
 
-end Analyzer.Process.Tactic
+end Analyzer.Process.Elaboration
