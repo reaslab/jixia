@@ -8,6 +8,15 @@ import Analyzer.Types
 
 open Lean Elab Meta Tactic
 
+namespace Lean.MVarId
+
+def mvarIdNat (mvar : MVarId) :=
+  match mvar.name with
+  | .num _ n => n
+  | _ => unreachable!
+
+end Lean.MVarId
+
 namespace Lean.Elab.Tactic.TacticM
 
 def runWithInfoBefore {α : Type} (ci : ContextInfo) (ti : TacticInfo) (x : TacticM α) : IO α :=
@@ -63,6 +72,7 @@ def fromMVar (goal : MVarId) (extraFun : MVarId → MetaM (Option Json) := fun _
     return {
       tag,
       context,
+      mvarId := goal.mvarIdNat,
       type := (← ppExpr type).pretty,
       isProp := (← inferType type).isProp,
       extra?,

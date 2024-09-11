@@ -6,7 +6,7 @@ Authors: Tony Beta Lambda, Kokic
 import Lean
 import Analyzer.Process.Tactic.Simp
 
-open Lean Elab Meta Command
+open Lean Elab Meta Command Tactic TacticM
 
 namespace Analyzer.Process.Elaboration
 open Analyzer.Process.Tactic
@@ -50,12 +50,30 @@ def getResult : CommandElabM (Array TacticElabInfo) := do
       info.mapM fun (ci, ti) => do
         let mut extra : Json := .null
         extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
-
+        let goalsBefore ← runWithInfoBefore ci ti getUnsolvedGoals
+        let dependencies ← runWithInfoAfter ci ti do
+          goalsBefore.foldlM
+            fun array goal => do
+              match ← getExprMVarAssignment? goal with
+              | some e =>
+                return array.push
+                  (goal.mvarIdNat, (← getMVars e) |>.map MVarId.mvarIdNat)
+              | none => return array
+            #[]
+        let typeDependencies ← runWithInfoAfter ci ti do
+          let goalsAfter ← getUnsolvedGoals
+          goalsAfter.foldlM
+            fun array goal => do
+              let mvarNums :=(← getMVars (← goal.getType)) |>.map MVarId.mvarIdNat
+              return array.push (goal.mvarIdNat, mvarNums)
+            #[]
         pure {
           tactic := ti.stx,
           references := references ti.stx,
           before := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoBefore ci ti,
           after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
+          dependencies := dependencies,
+          typeDependencies := typeDependencies,
           extra? := if extra.isNull then none else extra,
         : TacticElabInfo}
     else

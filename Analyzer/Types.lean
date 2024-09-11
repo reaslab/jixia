@@ -65,6 +65,7 @@ structure Variable where
 structure Goal where
   tag : Name
   context : Array Variable
+  mvarId : Nat
   type : String
   isProp : Bool
   extra? : Option Json := none
@@ -75,6 +76,8 @@ structure TacticElabInfo where
   references : HashSet Name
   before : Array Goal
   after : Array Goal
+  dependencies : Array (Nat × Array Nat)
+  typeDependencies : Array (Nat × Array Nat)
   extra? : Option Json := none
 
 structure LineInfo where
