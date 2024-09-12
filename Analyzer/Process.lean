@@ -61,9 +61,15 @@ elab "impl_process" : term => do
   let type ← `(Options → CommandElabM Unit)
   elabTerm term (← elabTerm type none)
 
+def setOptions (opts : Lean.Options) : Lean.Options :=
+  opts
+    |>.set pp.fieldNotation.name false
+    |>.set pp.fullNames.name true
+
 def run (options : Options) : FrontendM Unit := do
   runCommandElabM <| impl_onLoad options
   processCommands
-  runCommandElabM <| impl_process options
+  runCommandElabM <| withScope (fun scope => { scope with opts := setOptions scope.opts } ) <|
+    impl_process options
 
 end Analyzer
