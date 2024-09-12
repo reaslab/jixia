@@ -30,19 +30,21 @@ elab "impl_parseOptions" : term => do
   let type ← `(Parsed → Options)
   elabTerm val (← elabTerm type none)
 
-unsafe def runCommand (p : Parsed) : IO UInt32 := do
+def runCommand (p : Parsed) : IO UInt32 := do
   let file := FilePath.mk <| p.positionalArg! "file" |>.as! String
   let options := impl_parseOptions p
-  if p.hasFlag "initializer" then
+  let optionAST := parseFlag p "ast"
+  if p.hasFlag "initializer" then unsafe
     enableInitializersExecution
   withFile' file do
     run options
+    optionAST.output (← get).commands
     let messages := (← get).commandState.messages
     messages.forM fun message => do
       IO.eprint (← message.toString)
   return 0
 
-unsafe def jixiaCommand : Cmd := `[Cli|
+def jixiaCommand : Cmd := `[Cli|
   jixia VIA runCommand;
   "A static analysis tool for Lean 4."
 
@@ -59,5 +61,5 @@ unsafe def jixiaCommand : Cmd := `[Cli|
     file : String;  "File to process"
 ]
 
-unsafe def main (args : List String) : IO UInt32 :=
+def main (args : List String) : IO UInt32 :=
   jixiaCommand.validate args
