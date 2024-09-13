@@ -74,7 +74,6 @@ structure Dependency where
   mvarId : Name
   newGoals : Array Name
   newHypotheses : Array Name
-  usedHypotheses : Array Name
 
 structure TacticElabInfo where
   tactic : Syntax

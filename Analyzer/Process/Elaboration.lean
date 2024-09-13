@@ -85,8 +85,7 @@ def getResult : CommandElabM (Array TacticElabInfo) := do
                 return array.push {
                   mvarId := goal.name,
                   newGoals := mvars.map MVarId.name,
-                  newHypotheses := fvars.map FVarId.name,
-                  usedHypotheses := ← getUsedVariables (← instantiateMVars (.mvar goal))
+                  newHypotheses := fvars.map FVarId.name
                 }
               | none => return array
             #[]
