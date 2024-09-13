@@ -27,14 +27,14 @@ partial def references : Syntax → HashSet Name
   | .atom _ _ => .empty
   | .ident _ _ name _ => .empty |>.insert name
 
-def getUsedVariables (e : Expr) : MetaM (Array Name) :=
-  e.collectFVars.run default <&> fun s => s.2.fvarIds |>.map FVarId.name
+def getUsedFVarIds (e : Expr) : MetaM (Array FVarId) :=
+  e.collectFVars.run default <&> fun s => s.2.fvarIds
+
+def getUsedVariables (e : Expr) : MetaM (Array Name) := do
+  return (← getUsedFVarIds e).map FVarId.name
 
 def onLoad : CommandElabM Unit :=
   enableInfoTree
-
-def _root_.Lean.Meta.getFVars (e : Expr) : Array FVarId :=
-  (collectFVars {} e).fvarIds
 
 def getDependentsFromGoal (goal : MVarId) : MetaM (Array MVarId × Array FVarId) := do
   let mut visited : HashSet MVarId := {}
@@ -53,7 +53,6 @@ def getDependentsFromGoal (goal : MVarId) : MetaM (Array MVarId × Array FVarId)
       | some expr => mvars := mvars.append (← getMVars expr)
     | some {fvars, mvarIdPending} => do
       dependentFVars := dependentFVars.append <| fvars.map Expr.fvarId!
-      println! s!"{goal.name} {dependentFVars.map FVarId.name}"
       mvars := mvars.push mvarIdPending
   return (dependentMVars, dependentFVars)
 
@@ -83,8 +82,9 @@ def getResult : CommandElabM (Array TacticElabInfo) := do
                 let (mvars, fvars) ← getDependentsFromGoal goal
                 return array.push {
                   mvarId := goal.name,
-                  mvarDependencies := mvars.map MVarId.name,
-                  fvarDependencies := fvars.map FVarId.name
+                  newGoals := mvars.map MVarId.name,
+                  newHypotheses := fvars.map FVarId.name,
+                  usedHypotheses := ← getUsedVariables (← instantiateMVars (.mvar goal))
                 }
               | none => return array
             #[]
@@ -93,10 +93,12 @@ def getResult : CommandElabM (Array TacticElabInfo) := do
             fun array goal => do
               return array.push {
                 mvarId := goal.name,
-                mvarDependencies := (← getMVars (← goal.getType)) |>.map MVarId.name,
-                fvarDependencies := (getFVars (← goal.getType)) |>.map FVarId.name
+                newGoals := (← getMVars (← goal.getType)) |>.map MVarId.name,
+                newHypotheses := #[],
+                usedHypotheses := ← getUsedVariables (← goal.getType)
               }
             #[]
+
         pure {
           tactic := ti.stx,
           references := references ti.stx,
