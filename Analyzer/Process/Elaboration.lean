@@ -65,8 +65,10 @@ def getResult : CommandElabM (Array TacticElabInfo) := do
       let getUsedInfo (mvar : MVarId) : MetaM (Option Json) := do
         let typeUses ← getUsedVariables (← mvar.getType)
         let valueUses ← withMCtx mctx <| getUsedVariables <| .mvar mvar
+        let typeMVars := (← getMVars (← mvar.getType)).map MVarId.name
         return json%{
           typeUses: $(typeUses),
+          typeMVars: $(typeMVars),
           valueUses: $(valueUses)
         }
 
@@ -88,16 +90,6 @@ def getResult : CommandElabM (Array TacticElabInfo) := do
                 }
               | none => return array
             #[]
-        let typeDependencies ← runWithInfoAfter ci ti do
-          (← getUnsolvedGoals).foldlM
-            fun array goal => do
-              return array.push {
-                mvarId := goal.name,
-                newGoals := (← getMVars (← goal.getType)) |>.map MVarId.name,
-                newHypotheses := #[],
-                usedHypotheses := ← getUsedVariables (← goal.getType)
-              }
-            #[]
 
         pure {
           tactic := ti.stx,
@@ -105,7 +97,6 @@ def getResult : CommandElabM (Array TacticElabInfo) := do
           before := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoBefore ci ti,
           after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
           dependencies := dependencies,
-          typeDependencies := typeDependencies,
           extra? := if extra.isNull then none else extra,
         : TacticElabInfo}
     else

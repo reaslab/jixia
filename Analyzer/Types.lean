@@ -83,7 +83,6 @@ structure TacticElabInfo where
   before : Array Goal
   after : Array Goal
   dependencies : Array Dependency
-  typeDependencies : Array Dependency
   extra? : Option Json := none
 
 structure LineInfo where
