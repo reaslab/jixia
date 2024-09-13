@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024 BICMR@PKU. All rights reserved.
 Released under the Apache 2.0 license as described in the file LICENSE.
-Authors: Tony Beta Lambda, Kokic
+Authors: Tony Beta Lambda, Kokic, Znssong
 -/
 import Lean
 import Analyzer.Process.Tactic.Simp
@@ -33,6 +33,30 @@ def getUsedVariables (e : Expr) : MetaM (Array Name) :=
 def onLoad : CommandElabM Unit :=
   enableInfoTree
 
+def _root_.Lean.Meta.getFVars (e : Expr) : Array FVarId :=
+  (collectFVars {} e).fvarIds
+
+def getDependentsFromGoal (goal : MVarId) : MetaM (Array MVarId × Array FVarId) := do
+  let mut visited : HashSet MVarId := {}
+  let mut mvars := #[goal]
+  let mut dependentMVars := #[]
+  let mut dependentFVars := #[]
+  while !mvars.isEmpty do
+    let mvarId := mvars.back
+    mvars := mvars.pop
+    if visited.contains mvarId then continue
+    visited := visited.insert mvarId
+    match ← getDelayedMVarAssignment? mvarId with
+    | none => do
+      match ← getExprMVarAssignment? mvarId with
+      | none => dependentMVars := dependentMVars.push mvarId
+      | some expr => mvars := mvars.append (← getMVars expr)
+    | some {fvars, mvarIdPending} => do
+      dependentFVars := dependentFVars.append <| fvars.map Expr.fvarId!
+      println! s!"{goal.name} {dependentFVars.map FVarId.name}"
+      mvars := mvars.push mvarIdPending
+  return (dependentMVars, dependentFVars)
+
 def getResult : CommandElabM (Array TacticElabInfo) := do
   let trees ← getInfoTrees
   trees.toArray.concatMapM fun tree => do
@@ -55,17 +79,23 @@ def getResult : CommandElabM (Array TacticElabInfo) := do
           goalsBefore.foldlM
             fun array goal => do
               match ← getExprMVarAssignment? goal with
-              | some e =>
-                return array.push
-                  (goal.mvarIdNat, (← getMVars e) |>.map MVarId.mvarIdNat)
+              | some _ =>
+                let (mvars, fvars) ← getDependentsFromGoal goal
+                return array.push {
+                  mvarId := goal.name,
+                  mvarDependencies := mvars.map MVarId.name,
+                  fvarDependencies := fvars.map FVarId.name
+                }
               | none => return array
             #[]
         let typeDependencies ← runWithInfoAfter ci ti do
-          let goalsAfter ← getUnsolvedGoals
-          goalsAfter.foldlM
+          (← getUnsolvedGoals).foldlM
             fun array goal => do
-              let mvarNums :=(← getMVars (← goal.getType)) |>.map MVarId.mvarIdNat
-              return array.push (goal.mvarIdNat, mvarNums)
+              return array.push {
+                mvarId := goal.name,
+                mvarDependencies := (← getMVars (← goal.getType)) |>.map MVarId.name,
+                fvarDependencies := (getFVars (← goal.getType)) |>.map FVarId.name
+              }
             #[]
         pure {
           tactic := ti.stx,
