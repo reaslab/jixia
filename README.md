@@ -24,7 +24,7 @@ jixia comes with several plugins.
 - Declaration: source-level info about each declaration (`def`, `theorem`, `inductive`, etc.).
 - Symbol: info about symbols (or _constants_ in Lean 4 terminology) after elaboration, including their types and
   reference graph.
-- Elaboration: infor about the elaboration process, including tactic info.
+- Elaboration: info about the elaboration process, including tactic info.
 - Line: proof state at the beginning of each line, as displayed in VSCode infoview.
 - AST: a full dump of parsed commands.
 
