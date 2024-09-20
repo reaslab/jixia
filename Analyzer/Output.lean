@@ -71,7 +71,6 @@ local instance : ToJson Syntax where
     range: $(x.getRange?),
     original: $(x.isOriginal)
   }
-deriving instance ToJson for Dependency
 deriving instance ToJson for TacticElabInfo
 end
 

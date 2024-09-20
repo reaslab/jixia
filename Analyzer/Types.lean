@@ -70,18 +70,12 @@ structure Goal where
   isProp : Bool
   extra? : Option Json := none
 
-structure Dependency where
-  mvarId : Name
-  newGoals : Array Name
-  newHypotheses : Array Name
-
 structure TacticElabInfo where
   tactic : Syntax
   /-- Names referenced in this tactic, including constants and local hypotheses. -/
   references : HashSet Name
   before : Array Goal
   after : Array Goal
-  dependencies : Array Dependency
   extra? : Option Json := none
 
 structure LineInfo where

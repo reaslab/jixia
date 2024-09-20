@@ -60,45 +60,45 @@ def getResult : CommandElabM (Array TacticElabInfo) := do
   let trees ← getInfoTrees
   trees.toArray.concatMapM fun tree => do
     let info := tree.foldInfo (init := #[]) collectTacticInfo
-    if let some (ci, _) := info[0]? then
-      let mctx := ci.mctx
-      let getUsedInfo (mvar : MVarId) : MetaM (Option Json) := do
-        let typeUses ← getUsedVariables (← mvar.getType)
-        let valueUses ← withMCtx mctx <| getUsedVariables <| .mvar mvar
-        let typeMVars := (← getMVars (← mvar.getType)).map MVarId.name
-        return json%{
-          typeUses: $(typeUses),
-          typeMVars: $(typeMVars),
-          valueUses: $(valueUses)
-        }
+    if info.size == 0 then return #[]
+    let getUsedInfo (mvar : MVarId) : MetaM (Option Json) := do
+      let typeUses ← getUsedVariables (← mvar.getType)
+      let valueUses ← getUsedVariables <| .mvar mvar
+      let typeMVars := (← getMVars (← mvar.getType)).map MVarId.name
+      return json%{
+        typeUses: $(typeUses),
+        typeMVars: $(typeMVars),
+        valueUses: $(valueUses)
+      }
 
-      info.mapM fun (ci, ti) => do
-        let mut extra : Json := .null
-        extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
-        let goalsBefore ← runWithInfoBefore ci ti getUnsolvedGoals
-        let dependencies ← runWithInfoAfter ci ti do
-          goalsBefore.foldlM
-            fun array goal => do
-              match ← getExprMVarAssignment? goal with
-              | some _ =>
-                let (mvars, fvars) ← getDependentsFromGoal goal
-                return array.push {
-                  mvarId := goal.name,
-                  newGoals := mvars.map MVarId.name,
-                  newHypotheses := fvars.map FVarId.name
-                }
-              | none => return array
-            #[]
+    info.mapM fun (ci, ti) => do
+      let mut extra : Json := .null
+      extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
+      let goalsBefore ← runWithInfoBefore ci ti getUnsolvedGoals
+      let dependencies ← runWithInfoAfter ci ti do
+        goalsBefore.foldlM
+          fun map goal => do
+            match ← getExprMVarAssignment? goal with
+            | some _ =>
+              let (mvars, fvars) ← getDependentsFromGoal goal
+              let json := json%{
+                newGoals: $(mvars.map MVarId.name),
+                newHypotheses: $(fvars.map FVarId.name)
+              }
+              return HashMap.insert map goal json
+            | none => return map
+          ({} : HashMap MVarId Json)
 
-        pure {
-          tactic := ti.stx,
-          references := references ti.stx,
-          before := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoBefore ci ti,
-          after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
-          dependencies := dependencies,
-          extra? := if extra.isNull then none else extra,
-        : TacticElabInfo}
-    else
-      pure #[]
+      let getUsedInfo' (mvar : MVarId) : MetaM (Option Json) := do
+        let extra ← getUsedInfo mvar
+        return do return .mergeObj (← extra) (← dependencies.find? mvar)
+
+      pure {
+        tactic := ti.stx,
+        references := references ti.stx,
+        before := ← Goal.fromTactic (extraFun := getUsedInfo') |>.runWithInfoBefore ci ti,
+        after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
+        extra? := if extra.isNull then none else extra,
+      : TacticElabInfo}
 
 end Analyzer.Process.Elaboration
