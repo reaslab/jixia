@@ -16,6 +16,12 @@ open Lean Elab Term
 
 namespace Analyzer
 
+structure ScopeInfo where
+  varDecls : Array String
+  includeVars : Array Name
+  omitVars : Array Name
+  levelNames : Array Name
+
 /-- Information about a declaration command in source file. -/
 structure BaseDeclarationInfo where
   kind : String
@@ -29,6 +35,7 @@ structure BaseDeclarationInfo where
   params : Array BinderView
   type : Option Syntax
   value : Option Syntax
+  scopeInfo : ScopeInfo
   /-- The tactic sequence when `value` consists of a single `by` node. -/
   tactics : Array Syntax
 

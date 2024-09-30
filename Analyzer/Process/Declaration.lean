@@ -143,9 +143,19 @@ private def hasDeclNamespace (stx : Syntax) : MacroM (Bool) := do
   | _ => return false
 -- end of Lean.Elab.Declaration
 
+def getScopeInfo : CommandElabM ScopeInfo := do
+  let scope ← getScope
+  return {
+    varDecls := scope.varDecls.map fun stx => stx.raw.prettyPrint.pretty',
+    includeVars := scope.includedVars.toArray.map fun name => name.eraseMacroScopes,
+    omitVars := scope.omittedVars.toArray.map fun name => name.eraseMacroScopes,
+    levelNames := scope.levelNames.toArray,
+  }
+
 -- see Elab.elabInductive, which is of course also private
 def getConstructorInfo (parentName : Name) (stx : Syntax) : CommandElabM BaseDeclarationInfo := do
     -- def ctor := leading_parser optional docComment >> "\n| " >> declModifiers >> rawIdent >> optDeclSig
+    let scopeInfo ← getScopeInfo
     let mut modifiers ← elabModifiers stx[2]
     if let some leadingDocComment := stx[0].getOptional? then
       modifiers := { modifiers with docString? := TSyntax.getDocString ⟨leadingDocComment⟩ }
@@ -164,11 +174,14 @@ def getConstructorInfo (parentName : Name) (stx : Syntax) : CommandElabM BaseDec
       params,
       type,
       value := .none,
+      scopeInfo,
       tactics := #[],
     }
 
 -- see Elab.elabDeclaration
 def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
+  let scopeInfo ← getScopeInfo
+
   let modifiers ← elabModifiers stx[0]
   let decl := stx[1]
   let kind := decl.getKind
@@ -215,6 +228,7 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
     params,
     type,
     value,
+    scopeInfo,
     tactics,
    : BaseDeclarationInfo}
 

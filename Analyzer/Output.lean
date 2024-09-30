@@ -52,7 +52,7 @@ local instance : ToJson Syntax where
     range: $(x.getRange?),
     original: $(x.isOriginal)
   }
-deriving instance ToJson for BaseDeclarationInfo, InductiveInfo
+deriving instance ToJson for ScopeInfo, BaseDeclarationInfo, InductiveInfo
 instance : ToJson DeclarationInfo where
   toJson
   | .ofBase x => toJson x
