@@ -46,6 +46,7 @@ def fromMVar (goal : MVarId) (extraFun : MVarId → MetaM (Option Json) := fun _
     return {
       tag,
       context,
+      mvarId := goal.name,
       type := (← ppExpr type).pretty,
       isProp := (← inferType type).isProp,
       extra?,

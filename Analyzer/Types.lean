@@ -72,6 +72,7 @@ structure Variable where
 structure Goal where
   tag : Name
   context : Array Variable
+  mvarId : Name
   type : String
   isProp : Bool
   extra? : Option Json := none
