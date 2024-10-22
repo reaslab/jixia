@@ -24,6 +24,14 @@ theorem dsimp_test (x y z : Nat) (p : Nat → Prop) (h : p (x * y))
   let h₁ := Nat.mul_zero
   simp_all
 
+theorem rcases_test {x : Nat} (h : ∃ k, x = 2 * k) : ∃ k, x + 2 = 2 * k := by
+  rcases h with ⟨k, hk⟩
+  rw [hk]
+  exact ⟨k + 1, rfl⟩
+
+theorem comp_test (x : Nat) (h : ∃ k, x = 2 * k) : ∃ k, x + 4 = 2 * k :=
+  rcases_test (rcases_test h)
+
 /-- pow_succ x n = pow x n.succ -/
 def pow_succ [Mul α] (x : α) : Nat → α
   | .zero => x
