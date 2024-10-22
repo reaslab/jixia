@@ -146,7 +146,7 @@ private def hasDeclNamespace (stx : Syntax) : MacroM (Bool) := do
 def getScopeInfo : CommandElabM ScopeInfo := do
   let scope ← getScope
   return {
-    varDecls := scope.varDecls.map fun stx => stx.raw.prettyPrint.pretty',
+    varDecls := scope.varDecls.map fun stx => stx.raw.prettyPrint.pretty,
     includeVars := scope.includedVars.toArray.map fun name => name.eraseMacroScopes,
     omitVars := scope.omittedVars.toArray.map fun name => name.eraseMacroScopes,
     levelNames := scope.levelNames.toArray,

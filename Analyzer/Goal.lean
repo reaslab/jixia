@@ -11,35 +11,39 @@ open Lean Elab Meta Tactic
 
 namespace Analyzer.Goal
 
+def printContext : MetaM (Array Variable) := do
+  let lctx ← getLCtx
+  let lctx : LocalContext := lctx.sanitizeNames.run' { options := ← getOptions }
+  let mut context := Array.mkEmpty lctx.size
+  for ldecl in lctx do
+    if ldecl.isImplementationDetail then
+      continue
+    let var ← match ldecl with
+    | .cdecl _ id name type .. => do
+      let type ← instantiateMVars type
+      pure {
+        id := id.name,
+        name := name.simpMacroScopes,
+        type := (← ppExpr type).pretty,
+        value? := none,
+        isProp := (← inferType type).isProp,
+      }
+    | .ldecl _ id name type value .. => do
+      let type ← instantiateMVars type
+      pure {
+        id := id.name,
+        name := name.simpMacroScopes,
+        type := (← ppExpr type).pretty,
+        value? := (← ppExpr value).pretty,
+        isProp := (← inferType type).isProp,
+      }
+    context := context.push var
+  return context
+
 -- see Meta.ppGoal
 def fromMVar (goal : MVarId) (extraFun : MVarId → MetaM (Option Json) := fun _ => pure none) : MetaM Goal :=
   withEnableInfoTree false <| goal.withContext do
-    let lctx ← getLCtx
-    let lctx : LocalContext := lctx.sanitizeNames.run' { options := ← getOptions }
-    let mut context := Array.mkEmpty lctx.size
-    for ldecl in lctx do
-      if ldecl.isImplementationDetail then
-        continue
-      let var ← match ldecl with
-      | .cdecl _ id name type .. => do
-        let type ← instantiateMVars type
-        pure {
-          id := id.name,
-          name := name.simpMacroScopes,
-          type := (← ppExpr type).pretty,
-          value? := none,
-          isProp := (← inferType type).isProp,
-        }
-      | .ldecl _ id name type value .. => do
-        let type ← instantiateMVars type
-        pure {
-          id := id.name,
-          name := name.simpMacroScopes,
-          type := (← ppExpr type).pretty,
-          value? := (← ppExpr value).pretty,
-          isProp := (← inferType type).isProp,
-        }
-      context := context.push var
+    let context ← printContext
     let type ← goal.getType
     let tag ← goal.getTag
     let extra? ← extraFun goal

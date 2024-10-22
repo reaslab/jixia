@@ -33,9 +33,6 @@ def getUsedFVarIds (e : Expr) : MetaM (Array FVarId) :=
 def getUsedVariables (e : Expr) : MetaM (Array Name) := do
   return (← getUsedFVarIds e).map FVarId.name
 
-def onLoad : CommandElabM Unit :=
-  enableInfoTree
-
 def getDependentsFromGoal (goal : MVarId) : MetaM (Array MVarId × Array FVarId) := do
   let mut visited : HashSet MVarId := {}
   let mut mvars := #[goal]
@@ -56,49 +53,70 @@ def getDependentsFromGoal (goal : MVarId) : MetaM (Array MVarId × Array FVarId)
       mvars := mvars.push mvarIdPending
   return (dependentMVars, dependentFVars)
 
-def getResult : CommandElabM (Array TacticElabInfo) := do
-  let trees ← getInfoTrees
-  trees.toArray.concatMapM fun tree => do
-    let info := tree.foldInfo (init := #[]) collectTacticInfo
-    if info.size == 0 then return #[]
-    let getUsedInfo (mvar : MVarId) : MetaM (Option Json) := do
-      let typeUses ← getUsedVariables (← mvar.getType)
-      let valueUses ← getUsedVariables <| .mvar mvar
-      let typeMVars := (← getMVars (← mvar.getType)).map MVarId.name
-      return json%{
-        typeUses: $(typeUses),
-        typeMVars: $(typeMVars),
-        valueUses: $(valueUses)
-      }
 
-    info.mapM fun (ci, ti) => do
-      let mut extra : Json := .null
-      extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
-      let goalsBefore ← runWithInfoBefore ci ti getUnsolvedGoals
-      let dependencies ← runWithInfoAfter ci ti do
-        goalsBefore.foldlM
-          fun map goal => do
-            match ← getExprMVarAssignment? goal with
-            | some _ =>
-              let (mvars, fvars) ← getDependentsFromGoal goal
-              let json := json%{
-                newGoals: $(mvars.map MVarId.name),
-                newHypotheses: $(fvars.map FVarId.name)
-              }
-              return HashMap.insert map goal json
-            | none => return map
-          ({} : HashMap MVarId Json)
+def getUsedInfo (mvar : MVarId) : MetaM (Option Json) := do
+  let typeUses ← getUsedVariables (← mvar.getType)
+  let valueUses ← getUsedVariables <| .mvar mvar
+  let typeMVars := (← getMVars (← mvar.getType)).map MVarId.name
+  return json%{
+    typeUses: $(typeUses),
+    typeMVars: $(typeMVars),
+    valueUses: $(valueUses)
+  }
 
-      let getUsedInfo' (mvar : MVarId) : MetaM (Option Json) := do
-        let extra ← getUsedInfo mvar
-        return do return .mergeObj (← extra) (← dependencies.find? mvar)
+def getTacticInfo (ci : ContextInfo) (ti : TacticInfo) : IO TacticElabInfo := do
+    let mut extra : Json := .null
+    extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
+    let goalsBefore ← runWithInfoBefore ci ti getUnsolvedGoals
+    let dependencies ← runWithInfoAfter ci ti do
+      goalsBefore.foldlM
+        fun map goal => do
+          match ← getExprMVarAssignment? goal with
+          | some _ =>
+            let (mvars, fvars) ← getDependentsFromGoal goal
+            let json := json%{
+              newGoals: $(mvars.map MVarId.name),
+              newHypotheses: $(fvars.map FVarId.name)
+            }
+            return HashMap.insert map goal json
+          | none => return map
+        ({} : HashMap MVarId Json)
 
-      pure {
-        tactic := ti.stx,
-        references := references ti.stx,
-        before := ← Goal.fromTactic (extraFun := getUsedInfo') |>.runWithInfoBefore ci ti,
-        after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
-        extra? := if extra.isNull then none else extra,
-      : TacticElabInfo}
+    let getUsedInfo' (mvar : MVarId) : MetaM (Option Json) := do
+      let extra ← getUsedInfo mvar
+      return do return .mergeObj (← extra) (← dependencies.find? mvar)
+
+    pure {
+      tactic := ti.stx,
+      references := references ti.stx,
+      before := ← Goal.fromTactic (extraFun := getUsedInfo') |>.runWithInfoBefore ci ti,
+      after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
+      extra? := if extra.isNull then none else extra,
+    : TacticElabInfo}
+
+def getTermInfo (ci : ContextInfo) (ti : TermInfo) : IO TermElabInfo :=
+  ti.runMetaM ci do pure {
+    term := ti.stx,
+    context := ← Goal.printContext,
+    type := (← ppExpr (← inferType ti.expr)).pretty
+    expectedType := ← ti.expectedType?.mapM fun type => do pure (← ppExpr type).pretty
+    value := (← ppExpr ti.expr).pretty
+  }
+
+
+def onLoad : CommandElabM Unit :=
+  enableInfoTree
+
+def getResult : CommandElabM (Array ElaborationInfo) := do
+  let trees := (← getInfoTrees).toArray
+  trees.filterMapM fun tree => do
+    tree.visitM (postNode := fun ci info _ children => do
+      let children' := children.filterMap id |>.toArray
+      match info with
+      | .ofTacticInfo ti => .tactic (children := children') <$> getTacticInfo ci ti
+      | .ofTermInfo ti => .term (children := children') <$> getTermInfo ci ti
+      | _ => pure <| .other children'
+    )
+
 
 end Analyzer.Process.Elaboration

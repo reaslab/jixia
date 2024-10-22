@@ -44,7 +44,7 @@ def _root_.Lean.Meta.Origin.getName {m : Type → Type} [Monad m] [MonadLCtx m] 
   | .stx id _ => pure id
   | .other name => pure name
 
-def getUsedTheorems (ci : ContextInfo) (ti : TacticInfo) : CommandElabM Json := do
+def getUsedTheorems (ci : ContextInfo) (ti : TacticInfo) : IO Json := do
     if ti.stx.isOfKind |> List.any [
       ``Parser.Tactic.simp,
       ``Parser.Tactic.simpAll,

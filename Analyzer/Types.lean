@@ -85,6 +85,18 @@ structure TacticElabInfo where
   after : Array Goal
   extra? : Option Json := none
 
+structure TermElabInfo where
+  term : Syntax
+  context : Array Variable
+  type : String
+  expectedType : Option String
+  value : String
+
+inductive ElaborationInfo where
+  | term (info : TermElabInfo) (children : Array ElaborationInfo) : ElaborationInfo
+  | tactic (info : TacticElabInfo) (children : Array ElaborationInfo) : ElaborationInfo
+  | other (children : Array ElaborationInfo) : ElaborationInfo
+
 structure LineInfo where
   start : String.Pos
   state : Array Goal

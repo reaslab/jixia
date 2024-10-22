@@ -69,9 +69,10 @@ local instance : ToJson Syntax where
   toJson x := json% {
     kind: $(x.getKind),
     range: $(x.getRange?),
-    original: $(x.isOriginal)
+    original: $(x.isOriginal),
+    str: $(toString x)
   }
-deriving instance ToJson for TacticElabInfo
+deriving instance ToJson for TacticElabInfo, TermElabInfo, ElaborationInfo
 end
 
 deriving instance ToJson for SourceInfo, Syntax.Preresolved, Syntax
