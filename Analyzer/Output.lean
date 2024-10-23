@@ -65,6 +65,8 @@ deriving instance ToJson for Variable, Goal
 deriving instance ToJson for LineInfo
 
 section
+deriving instance ToJson for SpecialValue
+
 local instance : ToJson Syntax where
   toJson x := json% {
     kind: $(x.getKind),
@@ -73,6 +75,16 @@ local instance : ToJson Syntax where
     str: $(toString x)
   }
 deriving instance ToJson for TacticElabInfo, TermElabInfo, ElaborationInfo
+
+private partial def go : ElaborationTree → Json
+  | .mk info ref children => json% {
+    info: $(info),
+    ref: $(ref),
+    children: $(children.map go)
+  }
+
+instance : ToJson ElaborationTree where
+  toJson := go
 end
 
 deriving instance ToJson for SourceInfo, Syntax.Preresolved, Syntax

@@ -87,35 +87,53 @@ def getTacticInfo (ci : ContextInfo) (ti : TacticInfo) : IO TacticElabInfo := do
       return do return .mergeObj (← extra) (← dependencies.find? mvar)
 
     pure {
-      tactic := ti.stx,
       references := references ti.stx,
       before := ← Goal.fromTactic (extraFun := getUsedInfo') |>.runWithInfoBefore ci ti,
       after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
       extra? := if extra.isNull then none else extra,
     : TacticElabInfo}
 
+def setOptions (opts : Lean.Options) : Lean.Options :=
+  opts
+    |>.set pp.fieldNotation.name false
+    |>.set pp.fullNames.name true
+
+def getSpecialValue : Expr → Option SpecialValue
+  | .const name .. => some <| .const name
+  | .fvar id .. => some <| .fvar id
+  | _ => none
+
 def getTermInfo (ci : ContextInfo) (ti : TermInfo) : IO TermElabInfo :=
-  ti.runMetaM ci do pure {
-    term := ti.stx,
-    context := ← Goal.printContext,
+  ti.runMetaM ci <| withOptions setOptions do pure {
+    context := ← Goal.printContext
     type := (← ppExpr (← inferType ti.expr)).pretty
     expectedType := ← ti.expectedType?.mapM fun type => do pure (← ppExpr type).pretty
     value := (← ppExpr ti.expr).pretty
+    special? := getSpecialValue ti.expr
   }
 
 
 def onLoad : CommandElabM Unit :=
   enableInfoTree
 
-def getResult : CommandElabM (Array ElaborationInfo) := do
+def getResult : CommandElabM (Array ElaborationTree) := do
   let trees := (← getInfoTrees).toArray
   trees.filterMapM fun tree => do
     tree.visitM (postNode := fun ci info _ children => do
-      let children' := children.filterMap id |>.toArray
-      match info with
-      | .ofTacticInfo ti => .tactic (children := children') <$> getTacticInfo ci ti
-      | .ofTermInfo ti => .term (children := children') <$> getTermInfo ci ti
-      | _ => pure <| .other children'
+      let info' ← match info with
+      | .ofTacticInfo ti => .tactic <$> getTacticInfo ci ti
+      | .ofTermInfo ti => .term <$> getTermInfo ci ti
+      | .ofCommandInfo _ => pure <| .simple "command"
+      | .ofMacroExpansionInfo _ => pure <| .simple "macro"
+      | .ofFieldInfo _ => pure <| .simple "field"
+      | .ofOptionInfo _ => pure <| .simple "option"
+      | .ofCompletionInfo _ => pure <| .simple "completion"
+      | .ofUserWidgetInfo _ => pure <| .simple "uw"
+      | .ofCustomInfo _ => pure <| .simple "custom"
+      | .ofFVarAliasInfo _ => pure <| .simple "alias"
+      | .ofFieldRedeclInfo _ => pure <| .simple "redecl"
+      | .ofOmissionInfo _ => pure <| .simple "omission"
+      pure <| .mk info' info.stx <| children.filterMap id |>.toArray
     )
 
 

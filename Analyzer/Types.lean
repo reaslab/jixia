@@ -78,24 +78,30 @@ structure Goal where
   extra? : Option Json := none
 
 structure TacticElabInfo where
-  tactic : Syntax
   /-- Names referenced in this tactic, including constants and local hypotheses. -/
   references : HashSet Name
   before : Array Goal
   after : Array Goal
   extra? : Option Json := none
 
+inductive SpecialValue where
+  | const : Name → SpecialValue
+  | fvar : FVarId → SpecialValue
+
 structure TermElabInfo where
-  term : Syntax
   context : Array Variable
   type : String
   expectedType : Option String
   value : String
+  special? : Option SpecialValue
 
 inductive ElaborationInfo where
-  | term (info : TermElabInfo) (children : Array ElaborationInfo) : ElaborationInfo
-  | tactic (info : TacticElabInfo) (children : Array ElaborationInfo) : ElaborationInfo
-  | other (children : Array ElaborationInfo) : ElaborationInfo
+  | term (info : TermElabInfo) : ElaborationInfo
+  | tactic (info : TacticElabInfo) : ElaborationInfo
+  | simple (kind : String) : ElaborationInfo
+
+inductive ElaborationTree where
+  | mk (info : ElaborationInfo) (ref : Syntax) (children : Array ElaborationTree) : ElaborationTree
 
 structure LineInfo where
   start : String.Pos

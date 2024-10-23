@@ -32,10 +32,12 @@ theorem rcases_test {x : Nat} (h : ∃ k, x = 2 * k) : ∃ k, x + 2 = 2 * k := b
 theorem comp_test (x : Nat) (h : ∃ k, x = 2 * k) : ∃ k, x + 4 = 2 * k :=
   rcases_test (rcases_test h)
 
-/-- pow_succ x n = pow x n.succ -/
-def pow_succ [Mul α] (x : α) : Nat → α
+/-- pow' x n = x ^ (n + 1) -/
+def pow' [Mul α] (x : α) : Nat → α
   | .zero => x
-  | .succ n => pow_succ x n * x
+  | .succ n => pow' x n * x
+
+theorem pow'_succ [Mul α] (x : α) (n : Nat) : pow' x n.succ = (pow' x n) * x := rfl
 
 structure FermatTriple (k : Nat) : Type where
   x : Nat
