@@ -72,7 +72,7 @@ local instance : ToJson Syntax where
     kind: $(x.getKind),
     range: $(x.getRange?),
     original: $(x.isOriginal),
-    str: $(toString x)
+    str: $(x.prettyPrint.pretty 0)
   }
 deriving instance ToJson for TacticElabInfo, TermElabInfo, ElaborationInfo
 
