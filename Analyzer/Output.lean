@@ -74,7 +74,7 @@ local instance : ToJson Syntax where
     original: $(x.isOriginal),
     str: $(x.prettyPrint.pretty 0)
   }
-deriving instance ToJson for TacticElabInfo, TermElabInfo, ElaborationInfo
+deriving instance ToJson for TacticElabInfo, TermElabInfo, MacroInfo, ElaborationInfo
 
 private partial def go : ElaborationTree → Json
   | .mk info ref children => json% {

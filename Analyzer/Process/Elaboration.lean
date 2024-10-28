@@ -123,8 +123,8 @@ def getResult : CommandElabM (Array ElaborationTree) := do
       let info' ← match info with
       | .ofTacticInfo ti => .tactic <$> getTacticInfo ci ti
       | .ofTermInfo ti => .term <$> getTermInfo ci ti
+      | .ofMacroExpansionInfo mi => pure <| .macro { expanded := mi.output }
       | .ofCommandInfo _ => pure <| .simple "command"
-      | .ofMacroExpansionInfo _ => pure <| .simple "macro"
       | .ofFieldInfo _ => pure <| .simple "field"
       | .ofOptionInfo _ => pure <| .simple "option"
       | .ofCompletionInfo _ => pure <| .simple "completion"

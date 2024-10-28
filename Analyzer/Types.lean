@@ -95,10 +95,14 @@ structure TermElabInfo where
   value : String
   special? : Option SpecialValue
 
+structure MacroInfo where
+  expanded : Syntax
+
 inductive ElaborationInfo where
-  | term (info : TermElabInfo) : ElaborationInfo
-  | tactic (info : TacticElabInfo) : ElaborationInfo
-  | simple (kind : String) : ElaborationInfo
+  | term : TermElabInfo → ElaborationInfo
+  | tactic : TacticElabInfo → ElaborationInfo
+  | macro : MacroInfo → ElaborationInfo
+  | simple : String → ElaborationInfo
 
 inductive ElaborationTree where
   | mk (info : ElaborationInfo) (ref : Syntax) (children : Array ElaborationTree) : ElaborationTree
