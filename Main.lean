@@ -36,12 +36,11 @@ def runCommand (p : Parsed) : IO UInt32 := do
   let optionAST := parseFlag p "ast"
   if p.hasFlag "initializer" then unsafe
     enableInitializersExecution
-  withFile' file do
-    run options
-    optionAST.output (← get).commands
-    let messages := (← get).commandState.messages
-    messages.forM fun message => do
-      IO.eprint (← message.toString)
+  let (_, state) ← withFile file <| run options
+  optionAST.output state.commands
+  let messages := state.commandState.messages
+  messages.forM fun message => do
+    IO.eprint (← message.toString)
   return 0
 
 def jixiaCommand : Cmd := `[Cli|

@@ -65,33 +65,33 @@ def getUsedInfo (mvar : MVarId) : MetaM (Option Json) := do
   }
 
 def getTacticInfo (ci : ContextInfo) (ti : TacticInfo) : IO TacticElabInfo := do
-    let mut extra : Json := .null
-    extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
-    let goalsBefore ← runWithInfoBefore ci ti getUnsolvedGoals
-    let dependencies ← runWithInfoAfter ci ti do
-      goalsBefore.foldlM
-        fun map goal => do
-          match ← getExprMVarAssignment? goal with
-          | some _ =>
-            let (mvars, fvars) ← getDependentsFromGoal goal
-            let json := json%{
-              newGoals: $(mvars.map MVarId.name),
-              newHypotheses: $(fvars.map FVarId.name)
-            }
-            return HashMap.insert map goal json
-          | none => return map
-        ({} : HashMap MVarId Json)
+  let mut extra : Json := .null
+  extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
+  let goalsBefore ← runWithInfoBefore ci ti getUnsolvedGoals
+  let dependencies ← runWithInfoAfter ci ti do
+    goalsBefore.foldlM
+      fun map goal => do
+        match ← getExprMVarAssignment? goal with
+        | some _ =>
+          let (mvars, fvars) ← getDependentsFromGoal goal
+          let json := json%{
+            newGoals: $(mvars.map MVarId.name),
+            newHypotheses: $(fvars.map FVarId.name)
+          }
+          return HashMap.insert map goal json
+        | none => return map
+      ({} : HashMap MVarId Json)
 
-    let getUsedInfo' (mvar : MVarId) : MetaM (Option Json) := do
-      let extra ← getUsedInfo mvar
-      return do return .mergeObj (← extra) (← dependencies.find? mvar)
+  let getUsedInfo' (mvar : MVarId) : MetaM (Option Json) := do
+    let extra ← getUsedInfo mvar
+    return do return .mergeObj (← extra) (← dependencies.find? mvar)
 
-    pure {
-      references := references ti.stx,
-      before := ← Goal.fromTactic (extraFun := getUsedInfo') |>.runWithInfoBefore ci ti,
-      after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
-      extra? := if extra.isNull then none else extra,
-    : TacticElabInfo}
+  pure {
+    references := references ti.stx,
+    before := ← Goal.fromTactic (extraFun := getUsedInfo') |>.runWithInfoBefore ci ti,
+    after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
+    extra? := if extra.isNull then none else extra,
+  : TacticElabInfo}
 
 def setOptions (opts : Lean.Options) : Lean.Options :=
   opts

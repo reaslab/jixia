@@ -15,8 +15,8 @@ def loadFile (path : FilePath) : IO (Context × State) := do
   let inputCtx := mkInputContext input path.toString
   loadFrontend inputCtx
 
-def withFile' {α : Type _} (path : FilePath) (m : FrontendM α) : IO α := do
+def withFile {α : Type _} (path : FilePath) (m : FrontendM α) : IO (α × State) := do
   let (context, state) ← loadFile path
-  m context |>.run' state
+  m context |>.run state
 
 end Analyzer
