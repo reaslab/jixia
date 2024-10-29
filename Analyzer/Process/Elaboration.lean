@@ -65,8 +65,11 @@ def getUsedInfo (mvar : MVarId) : MetaM (Option Json) := do
   }
 
 def getTacticInfo (ci : ContextInfo) (ti : TacticInfo) : IO TacticElabInfo := do
-  let mut extra : Json := .null
-  extra := extra.mergeObj (← Simp.getUsedTheorems ci ti)
+  let mut extra := Json.null
+  try
+    let simp ← Simp.getUsedTheorems ci ti
+    extra := extra.mergeObj simp
+  catch _ => pure ()
   let goalsBefore ← runWithInfoBefore ci ti getUnsolvedGoals
   let dependencies ← runWithInfoAfter ci ti do
     goalsBefore.foldlM
@@ -103,14 +106,14 @@ def getSpecialValue : Expr → Option SpecialValue
   | .fvar id .. => some <| .fvar id
   | _ => none
 
-def getTermInfo (ci : ContextInfo) (ti : TermInfo) : IO TermElabInfo :=
-  ti.runMetaM ci <| withOptions setOptions do pure {
+def getTermInfo (ci : ContextInfo) (ti : TermInfo) : IO (Option TermElabInfo) := do
+  ti.runMetaM ci <| withOptions setOptions try pure <| some {
     context := ← Goal.printContext
     type := (← ppExpr (← inferType ti.expr)).pretty
     expectedType := ← ti.expectedType?.mapM fun type => do pure (← ppExpr type).pretty
     value := (← ppExpr ti.expr).pretty
     special? := getSpecialValue ti.expr
-  }
+  } catch _ => pure none
 
 
 def onLoad : CommandElabM Unit :=
@@ -122,7 +125,7 @@ def getResult : CommandElabM (Array ElaborationTree) := do
     tree.visitM (postNode := fun ci info _ children => do
       let info' ← match info with
       | .ofTacticInfo ti => .tactic <$> getTacticInfo ci ti
-      | .ofTermInfo ti => .term <$> getTermInfo ci ti
+      | .ofTermInfo ti => pure <| .term <$> (← getTermInfo ci ti) |>.getD <| .simple "term"
       | .ofMacroExpansionInfo mi => pure <| .macro { expanded := mi.output }
       | .ofCommandInfo _ => pure <| .simple "command"
       | .ofFieldInfo _ => pure <| .simple "field"
