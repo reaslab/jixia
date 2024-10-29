@@ -6,9 +6,6 @@ Authors: Tony Beta Lambda
 import Lean
 
 /-!
-Note on `Syntax` fields: by default, `Syntax` fields should be regarded as references to a part of source code.
-Generated syntax nodes are serialized as `null`.
-
 Note on source ranges: we encode all source positions/ranges by byte.
 -/
 
@@ -32,6 +29,7 @@ structure BaseDeclarationInfo where
   name : Name
   fullname : Name
   modifiers : Modifiers
+  signature : Syntax
   params : Array BinderView
   type : Option Syntax
   value : Option Syntax

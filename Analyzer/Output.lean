@@ -50,7 +50,8 @@ section
 local instance : ToJson Syntax where
   toJson x := json% {
     range: $(x.getRange?),
-    original: $(x.isOriginal)
+    original: $(x.isOriginal),
+    str: $(x.prettyPrint.pretty 0)
   }
 deriving instance ToJson for ScopeInfo, BaseDeclarationInfo, InductiveInfo
 instance : ToJson DeclarationInfo where

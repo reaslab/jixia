@@ -162,7 +162,8 @@ def getConstructorInfo (parentName : Name) (stx : Syntax) : CommandElabM BaseDec
     let id := stx[3]
     let name := id.getId
     let fullname ← getFullname modifiers <| parentName ++ name
-    let (binders, type) := expandOptDeclSig stx[4]
+    let signature := stx[4]
+    let (binders, type) := expandOptDeclSig signature
     let params ← liftTermElabM <| binders.getArgs.concatMapM toBinderViews
     return {
       kind := "ctor",
@@ -171,6 +172,7 @@ def getConstructorInfo (parentName : Name) (stx : Syntax) : CommandElabM BaseDec
       name,
       fullname,
       modifiers,
+      signature,
       params,
       type,
       value := .none,
@@ -188,6 +190,22 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
 
   let .str _ kindStr := kind | unreachable!
 
+  let signature := match kind with
+    | ``Command.abbrev
+    | ``Command.definition
+    | ``Command.theorem
+    | ``Command.opaque
+    | ``Command.axiom
+    | ``Command.inductive
+    | ``Command.classInductive =>
+      decl[2]
+    | ``Command.instance =>
+      decl[4]
+    | ``Command.example =>
+      decl[1]
+    | ``Command.structure =>
+      Syntax.node2 .none ``Command.optDeclSig decl[2] decl[4]
+    | _ => unreachable!
   let (id, binders, type, value) := ← if isDefLike decl then do
     let defView ← mkDefView modifiers decl
     return (defView.declId, defView.binders, defView.type?, some defView.value)
@@ -225,6 +243,7 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
     name,
     fullname,
     modifiers,
+    signature,
     params,
     type,
     value,
