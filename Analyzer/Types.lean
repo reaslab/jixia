@@ -34,8 +34,6 @@ structure BaseDeclarationInfo where
   type : Option Syntax
   value : Option Syntax
   scopeInfo : ScopeInfo
-  /-- The tactic sequence when `value` consists of a single `by` node. -/
-  tactics : Array Syntax
 
 structure InductiveInfo extends BaseDeclarationInfo where
   constructors : Array BaseDeclarationInfo

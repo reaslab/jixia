@@ -177,7 +177,6 @@ def getConstructorInfo (parentName : Name) (stx : Syntax) : CommandElabM BaseDec
       type,
       value := .none,
       scopeInfo,
-      tactics := #[],
     }
 
 -- see Elab.elabDeclaration
@@ -225,17 +224,6 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
   let fullname ← getFullname modifiers name
   let params ← liftTermElabM <| binders.getArgs.concatMapM toBinderViews
 
-  let tactics := if let some value := value then
-    if value.getKind == ``Command.declValSimple ∧
-        value[1].getKind == ``Term.byTactic ∧
-        value[1][1].getKind == ``Tactic.tacticSeq then
-      let tacticSeq := value[1][1][0]
-      tacticSeq[0].getArgs
-    else
-      #[]
-  else
-    #[]
-
   let info := {
     kind := kindStr,
     ref := stx,
@@ -248,7 +236,6 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
     type,
     value,
     scopeInfo,
-    tactics,
    : BaseDeclarationInfo}
 
   if kind == ``Command.«inductive» ∨ kind == ``Command.classInductive then
