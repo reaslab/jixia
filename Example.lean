@@ -24,6 +24,13 @@ theorem dsimp_test (x y z : Nat) (p : Nat → Prop) (h : p (x * y))
   let h₁ := Nat.mul_zero
   simp_all
 
+theorem rw_test (x y z : Nat) (p : Nat → Prop) (h : p (x * y))
+    : p ((x + 0) * (0 + y * 1 + z * 0)) := by
+  rw [Nat.mul_zero]
+  repeat rw [Nat.add_zero]
+  rw [Nat.zero_add, Nat.mul_one]
+  assumption
+
 theorem rcases_test {x : Nat} (h : ∃ k, x = 2 * k) : ∃ k, x + 2 = 2 * k := by
   rcases h with ⟨k, hk⟩
   rw [hk]
