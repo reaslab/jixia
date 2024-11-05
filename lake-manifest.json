@@ -5,7 +5,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "c27ab606918fadcaff38593ca566d26109fa49c1",
+   "rev": "ede851df1467ae11574ba664ad978ae05aacc68c",
    "name": "metalib",
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",

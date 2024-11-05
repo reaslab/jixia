@@ -3,8 +3,8 @@ Copyright (c) 2024 BICMR@PKU. All rights reserved.
 Released under the Apache 2.0 license as described in the file LICENSE.
 Authors: Tony Beta Lambda
 -/
+import Metalib.Load
 import Analyzer.Types
-import Analyzer.Load
 import Analyzer.Process
 import Cli
 
