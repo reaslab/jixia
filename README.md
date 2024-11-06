@@ -30,7 +30,7 @@ jixia comes with several plugins.
 
 Each plugin can be set to output to a json file or be turned off individually.  For example,
 ```sh
-/path/to/jixia -d Example.decl.json -s Example.sym.json -t Example.tac.json -l Example.lines.json Example.lean
+/path/to/jixia -d Example.decl.json -s Example.sym.json -e Example.elab.json -l Example.lines.json Example.lean
 ```
 will generate the corresponding json files from the declaration, symbol, elaboration, and line plugins.  If a flag is
 omitted, the corresponding plugin will not run.
