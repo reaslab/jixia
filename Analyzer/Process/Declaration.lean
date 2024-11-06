@@ -6,7 +6,7 @@ Authors: Tony Beta Lambda
 import Lean
 import Analyzer.Types
 
-open Lean Elab Command Parser Term
+open Lean Elab Command Parser Term PrettyPrinter
 open TSyntax.Compat
 
 namespace Analyzer.Process.Declaration
@@ -146,7 +146,7 @@ private def hasDeclNamespace (stx : Syntax) : MacroM (Bool) := do
 def getScopeInfo : CommandElabM ScopeInfo := do
   let scope ← getScope
   return {
-    varDecls := scope.varDecls.map fun stx => stx.raw.prettyPrint.pretty,
+    varDecls := ← scope.varDecls.mapM fun stx => do liftCoreM <| toString <$> ppCommand (← `(variable $stx))
     includeVars := scope.includedVars.toArray.map fun name => name.eraseMacroScopes,
     omitVars := scope.omittedVars.toArray.map fun name => name.eraseMacroScopes,
     levelNames := scope.levelNames.toArray,
