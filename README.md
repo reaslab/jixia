@@ -28,17 +28,17 @@ jixia comes with several plugins.
 - Line: proof state at the beginning of each line, as displayed in VSCode infoview.
 - AST: a full dump of parsed commands.
 
-Each plugin can be set to output to a json file or be turned off individually.  For example,
+To analyze a single file:
 ```sh
 /path/to/jixia -d Example.decl.json -s Example.sym.json -e Example.elab.json -l Example.lines.json Example.lean
 ```
 will generate the corresponding json files from the declaration, symbol, elaboration, and line plugins.  If a flag is
 omitted, the corresponding plugin will not run.
 
-When analyzing a module in a package, You must first build your package with `lake build` (or with `lake exe cache get`
-for mathlib-based projects).  You also need to set the environment variables to make imports work, by running jixia as
+To analyze a module in a package, You must first build your package with `lake build` (or with `lake exe cache get`
+for mathlib-based projects).  You also need to set the environment variables to make imports work, or run jixia with
 ```sh
-lake env /path/to/jixia [other arguments]
+lake env /path/to/jixia -d Example.decl.json [...other arguments]
 ```
 in your project root, i.e., where lakefile.lean is located.
 
@@ -53,3 +53,11 @@ initializers. In particular, you should include this flag when analyzing mathlib
 
 jixia must be built with the *exact* same version of Lean as the file to be analyzed.  jixia is
 known to be compatible with Lean v4.11.0.
+
+### FAQ
+
+- `Unknown module prefix ... `: use `lake env`.
+
+- `... cannot evaluate [init] declaration`: use `-i` flag.
+
+- `... failed to read file ..., invalid header`: the Lean version used to build jixia must exactly match that of the target file/project.
