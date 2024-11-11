@@ -6,7 +6,9 @@ Authors: Tony Beta Lambda, Kokic, Znssong
 import Lean
 import Analyzer.Process.Tactic.Simp
 
-open Lean Elab Meta Command Tactic TacticM
+open Lean hiding HashSet HashMap
+open Elab Meta Command Tactic TacticM
+open Std (HashSet HashMap)
 
 namespace Analyzer.Process.Elaboration
 open Analyzer.Process.Tactic
@@ -81,13 +83,13 @@ def getTacticInfo (ci : ContextInfo) (ti : TacticInfo) : IO TacticElabInfo := do
             newGoals: $(mvars.map MVarId.name),
             newHypotheses: $(fvars.map FVarId.name)
           }
-          return HashMap.insert map goal json
+          return map.insert goal json
         | none => return map
       ({} : HashMap MVarId Json)
 
   let getUsedInfo' (mvar : MVarId) : MetaM (Option Json) := do
     let extra ← getUsedInfo mvar
-    return do return .mergeObj (← extra) (← dependencies.find? mvar)
+    return do return .mergeObj (← extra) (← dependencies.get? mvar)
 
   pure {
     references := references ti.stx,

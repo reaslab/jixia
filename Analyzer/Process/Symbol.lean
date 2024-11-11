@@ -6,12 +6,14 @@ Authors: Tony Beta Lambda
 import Lean
 import Analyzer.Types
 
-open Lean Elab Term Command Frontend Parser
+open Lean hiding HashSet
+open Elab Term Command Frontend Parser
+open Std (HashSet)
 
 namespace Analyzer.Process.Symbol
 
 def references (expr : Expr) : HashSet Name :=
-  go expr (mkHashSet, mkHashSet) |>.2.2
+  go expr (.empty, .empty) |>.2.2
 where
   go (expr : Expr) : StateM (HashSet UInt64 × HashSet Name) Unit := do
     let data : UInt64 := expr.data

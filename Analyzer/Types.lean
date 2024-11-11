@@ -9,7 +9,9 @@ import Lean
 Note on source ranges: we encode all source positions/ranges by byte.
 -/
 
-open Lean Elab Term
+open Lean hiding HashSet
+open Elab Term
+open Std (HashSet)
 
 namespace Analyzer
 

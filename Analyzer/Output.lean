@@ -6,7 +6,9 @@ Authors: Tony Beta Lambda
 import Lean
 import Analyzer.Types
 
-open Lean Elab Meta Term
+open Lean hiding HashSet HashMap
+open Elab Meta Term
+open Std (HashSet HashMap)
 
 namespace Analyzer
 
