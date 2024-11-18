@@ -117,9 +117,23 @@ def getTermInfo (ci : ContextInfo) (ti : TermInfo) : IO (Option TermElabInfo) :=
     special? := getSpecialValue ti.expr
   } catch _ => pure none
 
+def skip : Tactic := fun stx =>
+  Term.withNarrowedArgTacticReuse (argIdx := 1) evalTactic stx
 
-def onLoad : CommandElabM Unit :=
+def onLoad : CommandElabM Unit := do
   enableInfoTree
+  -- TODO: add an option to enable/disable handling `focus`-like tactics
+  modifyEnv fun env => env |>
+  (tacticElabAttribute.ext.addEntry · {
+    key := ``Parser.Tactic.focus,
+    declName := ``skip,
+    value := skip,
+  }) |>
+  (tacticElabAttribute.ext.addEntry · {
+    key := ``cdot,
+    declName := ``skip,
+    value := skip,
+  })
 
 def getResult : CommandElabM (Array ElaborationTree) := do
   let trees := (← getInfoTrees).toArray
