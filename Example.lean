@@ -36,6 +36,12 @@ theorem rcases_test {x : Nat} (h : ∃ k, x = 2 * k) : ∃ k, x + 2 = 2 * k := b
   rw [hk]
   exact ⟨k + 1, rfl⟩
 
+theorem cdot_test : (∀ A, A → A) ∧ True := by
+  constructor
+  · intro A x
+    exact x
+  · constructor
+
 theorem comp_test (x : Nat) (h : ∃ k, x = 2 * k) : ∃ k, x + 4 = 2 * k :=
   rcases_test (rcases_test h)
 
