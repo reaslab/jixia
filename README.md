@@ -52,7 +52,7 @@ initializers. In particular, you should include this flag when analyzing mathlib
 ##### Compiler Compatibility
 
 jixia must be built with the *exact* same version of Lean as the file to be analyzed.  jixia is
-known to be compatible with Lean v4.11.0.
+known to be compatible with Lean v4.13.0.  To run jixia on a previous version of Lean, try checking out a commit tagged with that version number.  Some functionality may be missing, and the output format may differ significantly.
 
 ### FAQ
 
