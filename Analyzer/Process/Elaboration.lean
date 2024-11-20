@@ -7,7 +7,7 @@ import Lean
 import Analyzer.Process.Tactic.Simp
 
 open Lean hiding HashSet HashMap
-open Elab Meta Command Tactic TacticM
+open Elab Meta Command Tactic TacticM PrettyPrinter.Delaborator SubExpr
 open Std (HashSet HashMap)
 
 namespace Analyzer.Process.Elaboration
@@ -117,6 +117,22 @@ def getTermInfo (ci : ContextInfo) (ti : TermInfo) : IO (Option TermElabInfo) :=
     special? := getSpecialValue ti.expr
   } catch _ => pure none
 
+def delabCoeWithType : Delab := whenPPOption getPPCoercions do
+  let typeStx ← withType delab
+  let e ← getExpr
+  let .const declName _ := e.getAppFn | failure
+  let some info ← Meta.getCoeFnInfo? declName | failure
+  let n := e.getAppNumArgs
+  withOverApp info.numArgs do
+    match info.type with
+    | .coe => `((↑$(← withNaryArg info.coercee delab) : $typeStx))
+    | .coeFun =>
+      if n = info.numArgs then
+        `((⇑$(← withNaryArg info.coercee delab) : $typeStx))
+      else
+        withNaryArg info.coercee delab
+    | .coeSort => `((↥$(← withNaryArg info.coercee delab) : $typeStx))
+
 def skip : Tactic := fun stx =>
   Term.withNarrowedArgTacticReuse (argIdx := 1) evalTactic stx
 
@@ -133,6 +149,11 @@ def onLoad : CommandElabM Unit := do
     key := ``cdot,
     declName := ``skip,
     value := skip,
+  }) |>
+  (delabAttribute.ext.addEntry · {
+    key := `app,
+    declName := ``delabCoeWithType,
+    value := delabCoeWithType,
   })
 
 def getResult : CommandElabM (Array ElaborationTree) := do

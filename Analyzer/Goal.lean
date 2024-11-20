@@ -7,7 +7,8 @@ import Lean
 import Metalib.Info
 import Analyzer.Types
 
-open Lean Elab Meta Tactic
+open Lean Elab Tactic PrettyPrinter
+open Meta hiding ppExpr
 
 namespace Analyzer.Goal
 
@@ -51,7 +52,7 @@ def fromMVar (goal : MVarId) (extraFun : MVarId → MetaM (Option Json) := fun _
       tag,
       context,
       mvarId := goal.name,
-      type := (← ppExpr type).pretty,
+      type := (← ppTerm (← delab type)).pretty,
       isProp := (← inferType type).isProp,
       extra?,
     }

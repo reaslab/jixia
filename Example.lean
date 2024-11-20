@@ -42,6 +42,8 @@ theorem cdot_test : (∀ A, A → A) ∧ True := by
     exact x
   · constructor
 
+theorem coe_test (n : Nat) (h : n = 0) : ((↑n : Int) = 0) := by simp [h]
+
 theorem comp_test (x : Nat) (h : ∃ k, x = 2 * k) : ∃ k, x + 4 = 2 * k :=
   rcases_test (rcases_test h)
 
