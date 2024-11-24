@@ -66,6 +66,11 @@ def getUsedInfo (mvar : MVarId) : MetaM (Option Json) := do
     valueUses: $(valueUses)
   }
 
+def setOptions (opts : Lean.Options) : Lean.Options :=
+  opts
+    |>.set pp.fieldNotation.name false
+    |>.set pp.fullNames.name true
+
 def getTacticInfo (ci : ContextInfo) (ti : TacticInfo) : IO TacticElabInfo := do
   let mut extra := Json.null
   try
@@ -91,17 +96,16 @@ def getTacticInfo (ci : ContextInfo) (ti : TacticInfo) : IO TacticElabInfo := do
     let extra ← getUsedInfo mvar
     return do return .mergeObj (← extra) (← dependencies.get? mvar)
 
+  let before ← TacticM.runWithInfoBefore ci ti <| withOptions setOptions <|
+    Goal.fromTactic (extraFun := getUsedInfo')
+  let after ← TacticM.runWithInfoBefore ci ti <| withOptions setOptions <|
+    Goal.fromTactic (extraFun := getUsedInfo)
   pure {
     references := references ti.stx,
-    before := ← Goal.fromTactic (extraFun := getUsedInfo') |>.runWithInfoBefore ci ti,
-    after := ← Goal.fromTactic (extraFun := getUsedInfo) |>.runWithInfoAfter ci ti,
+    before,
+    after,
     extra? := if extra.isNull then none else extra,
   : TacticElabInfo}
-
-def setOptions (opts : Lean.Options) : Lean.Options :=
-  opts
-    |>.set pp.fieldNotation.name false
-    |>.set pp.fullNames.name true
 
 def getSpecialValue : Expr → Option SpecialValue
   | .const name .. => some <| .const name

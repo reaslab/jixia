@@ -45,7 +45,7 @@ def printContext : MetaM (Array Variable) := do
 
 -- see Meta.ppGoal
 def fromMVar (goal : MVarId) (extraFun : MVarId → MetaM (Option Json) := fun _ => pure none) : MetaM Goal :=
-  withEnableInfoTree false <| goal.withContext do
+  goal.withContext do
     let context ← printContext
     let type ← goal.getType
     let tag ← goal.getTag

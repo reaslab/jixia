@@ -79,3 +79,11 @@ instance : DecidablePred (IsSome (α := α)) := fun a =>
   | none => .isFalse neg_is_some_none
 
 end Option
+
+theorem map_length (f : α → α) (l : List α) : (l.map f).length = l.length := by
+  induction l with | nil | cons _ _ ih => _
+  rfl
+  unfold List.map
+  unfold List.length
+  rewrite [ih]
+  rfl
