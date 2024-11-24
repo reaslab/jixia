@@ -20,11 +20,12 @@ def printContext : MetaM (Array Variable) := do
     if ldecl.isImplementationDetail then
       continue
     let var ← match ldecl with
-    | .cdecl _ id name type .. => do
+    | .cdecl _ id name type bi .. => do
       let type ← instantiateMVars type
       pure {
         id := id.name,
         name := name.simpMacroScopes,
+        binderInfo? := some bi,
         type := (← ppExpr type).pretty,
         value? := none,
         isProp := (← inferType type).isProp,
@@ -34,6 +35,7 @@ def printContext : MetaM (Array Variable) := do
       pure {
         id := id.name,
         name := name.simpMacroScopes,
+        binderInfo? := none,
         type := (← ppExpr type).pretty,
         value? := (← ppExpr value).pretty,
         isProp := (← inferType type).isProp,

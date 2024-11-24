@@ -63,6 +63,7 @@ structure SymbolInfo where
 structure Variable where
   id : Name
   name : Name
+  binderInfo? : Option BinderInfo
   type : String
   value? : Option String
   isProp : Bool

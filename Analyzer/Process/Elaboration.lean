@@ -117,6 +117,7 @@ def getTermInfo (ci : ContextInfo) (ti : TermInfo) : IO (Option TermElabInfo) :=
     special? := getSpecialValue ti.expr
   } catch _ => pure none
 
+@[delab app]
 def delabCoeWithType : Delab := whenPPOption getPPCoercions do
   let typeStx ← withType delab
   let e ← getExpr
