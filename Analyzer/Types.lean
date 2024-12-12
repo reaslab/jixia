@@ -20,6 +20,8 @@ structure ScopeInfo where
   includeVars : Array Name
   omitVars : Array Name
   levelNames : Array Name
+  currNamespace : Name
+  openDecl : List OpenDecl
 
 /-- Information about a declaration command in source file. -/
 structure BaseDeclarationInfo where

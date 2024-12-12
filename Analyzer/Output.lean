@@ -55,6 +55,20 @@ local instance : ToJson Syntax where
     original: $(x.isOriginal),
     str: $(x.prettyPrint.pretty 0)
   }
+local instance : ToJson OpenDecl where
+  toJson
+  | .simple ns except => json%{
+    simple: {
+      «namespace»: $ns,
+      except: $except
+    }
+  }
+  | .explicit id declName => json%{
+    rename: {
+      name: $declName,
+      as: $id
+    }
+  }
 deriving instance ToJson for ScopeInfo, BaseDeclarationInfo, InductiveInfo
 instance : ToJson DeclarationInfo where
   toJson

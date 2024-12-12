@@ -3,9 +3,12 @@ Copyright (c) 2024 BICMR@PKU. All rights reserved.
 Released under the Apache 2.0 license as described in the file LICENSE.
 Authors: Tony Beta Lambda
 -/
+import Lean
+
+open Lean renaming Name → ame
 open IO in
 def hello : IO Unit :=
-  println! "Hello, world!"
+  println "Hello, world!"
 
 universe u
 variable {α : Type u}

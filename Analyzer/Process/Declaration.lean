@@ -150,6 +150,8 @@ def getScopeInfo : CommandElabM ScopeInfo := do
     includeVars := scope.includedVars.toArray.map fun name => name.eraseMacroScopes,
     omitVars := scope.omittedVars.toArray.map fun name => name.eraseMacroScopes,
     levelNames := scope.levelNames.toArray,
+    currNamespace := ← getCurrNamespace,
+    openDecl := ← getOpenDecls,
   }
 
 -- see Elab.elabInductive, which is of course also private
