@@ -27,11 +27,6 @@ instance : ToJson String.Range where
   toJson x := json% [$(x.start), $(x.stop)]
 deriving instance ToJson for Visibility, RecKind, AttributeKind, BinderInfo
 
-def _root_.Lean.Syntax.isOriginal (stx : Syntax) : Bool :=
-  match stx.getHeadInfo? with
-  | some (.original ..) => true
-  | _ => false
-
 def _root_.Lean.Name.toArray : Name → Array Json
   | .anonymous => #[]
   | .str xs x => xs.toArray.push x
@@ -52,9 +47,10 @@ section
 local instance : ToJson Syntax where
   toJson x := json% {
     range: $(x.getRange?),
-    original: $(x.isOriginal),
-    str: $(x.prettyPrint.pretty 0)
+    original: $(x.isOriginal)
   }
+deriving instance ToJson for PPSyntax, PPSyntaxWithKind
+
 local instance : ToJson OpenDecl where
   toJson
   | .simple ns except => json%{
@@ -76,7 +72,7 @@ instance : ToJson DeclarationInfo where
   | .ofInductive x => toJson x
 end
 
-deriving instance ToJson for SymbolInfo
+deriving instance ToJson for SymbolKind, SymbolInfo
 deriving instance ToJson for Variable, Goal
 
 deriving instance ToJson for LineInfo

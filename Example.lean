@@ -5,6 +5,7 @@ Authors: Tony Beta Lambda
 -/
 import Lean
 
+set_option autoImplicit false
 open Lean renaming Name → ame
 open IO in
 def hello : IO Unit :=

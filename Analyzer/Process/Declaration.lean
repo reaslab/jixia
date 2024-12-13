@@ -156,30 +156,31 @@ def getScopeInfo : CommandElabM ScopeInfo := do
 
 -- see Elab.elabInductive, which is of course also private
 def getConstructorInfo (parentName : Name) (stx : Syntax) : CommandElabM BaseDeclarationInfo := do
-    -- def ctor := leading_parser optional docComment >> "\n| " >> declModifiers >> rawIdent >> optDeclSig
-    let scopeInfo ← getScopeInfo
-    let mut modifiers ← elabModifiers stx[2]
-    if let some leadingDocComment := stx[0].getOptional? then
-      modifiers := { modifiers with docString? := TSyntax.getDocString ⟨leadingDocComment⟩ }
-    let id := stx[3]
-    let name := id.getId
-    let fullname ← getFullname modifiers <| parentName ++ name
-    let signature := stx[4]
-    let (binders, type) := expandOptDeclSig signature
-    let params ← liftTermElabM <| binders.getArgs.concatMapM toBinderViews
-    return {
-      kind := "ctor",
-      ref := stx,
-      id,
-      name,
-      fullname,
-      modifiers,
-      signature,
-      params,
-      type,
-      value := .none,
-      scopeInfo,
-    }
+  -- def ctor := leading_parser optional docComment >> "\n| " >> declModifiers >> rawIdent >> optDeclSig
+  let scopeInfo ← getScopeInfo
+  let mut modifiers ← elabModifiers stx[2]
+  if let some leadingDocComment := stx[0].getOptional? then
+    modifiers := { modifiers with docString? := TSyntax.getDocString ⟨leadingDocComment⟩ }
+  let id := stx[3]
+  let name := id.getId
+  let name ← getFullname modifiers <| parentName ++ name
+  let signature := stx[4]
+  let (binders, type) := expandOptDeclSig signature
+  let params ← liftTermElabM <| binders.getArgs.concatMapM toBinderViews
+
+  let (ref, signature) ← liftCoreM do pure (← PPSyntax.pp `command stx, ← PPSyntax.pp `term signature)
+  return {
+    kind := "ctor",
+    ref,
+    id,
+    name,
+    modifiers,
+    signature,
+    params,
+    type,
+    value := none,
+    scopeInfo,
+  }
 
 -- see Elab.elabDeclaration
 def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
@@ -207,6 +208,7 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
     | ``Command.structure =>
       Syntax.node2 .none ``Command.optDeclSig decl[2] decl[4]
     | _ => unreachable!
+
   let (id, binders, type, value) := ← if isDefLike decl then do
     let defView ← mkDefView modifiers decl
     return (defView.declId, defView.binders, defView.type?, some defView.value)
@@ -223,15 +225,15 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
     return (decl[1], binders, type, none)
 
   let name := id[0].getId
-  let fullname ← getFullname modifiers name
+  let name ← getFullname modifiers name
   let params ← liftTermElabM <| binders.getArgs.concatMapM toBinderViews
 
+  let (ref, signature) ← liftCoreM do pure (← PPSyntax.pp `command stx, ← PPSyntax.pp `term signature)
   let info := {
     kind := kindStr,
-    ref := stx,
+    ref,
     id,
     name,
-    fullname,
     modifiers,
     signature,
     params,
@@ -241,7 +243,7 @@ def getDeclarationInfo (stx : Syntax) : CommandElabM DeclarationInfo := do
    : BaseDeclarationInfo}
 
   if kind == ``Command.«inductive» ∨ kind == ``Command.classInductive then
-    let constructors ← decl[4].getArgs.mapM <| getConstructorInfo fullname
+    let constructors ← decl[4].getArgs.mapM <| getConstructorInfo name
     return .ofInductive { info with constructors }
 
   return .ofBase info
